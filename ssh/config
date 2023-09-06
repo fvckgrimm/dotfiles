@@ -1,0 +1,58 @@
+# Github configs 
+
+# Personal GitHub account
+Host github.com-personal
+	HostName github.com
+	PreferredAuthentications publickey
+	AddKeysToAgent yes
+	User git
+	IdentityFile ~/.ssh/personal_github
+
+# Grimm GitHub account
+Host github.com-grimm
+	HostName github.com
+	PreferredAuthentications publickey
+	AddKeysToAgent yes
+	User git
+	IdentityFile ~/.ssh/grimm_github
+
+# Work Github account
+Host github.com-work
+	HostName github.com
+	PreferredAuthentications publickey
+	AddKeysToAgent yes
+	User git
+	IdentityFile ~/.ssh/work_github
+
+
+# Example of how I manage multiple accounts on one machine, above are example setups and files.
+#
+# In $HOME, have a `.gitconfig` file which will look like the following:
+# The user info here will be associated with whatever will be the main account.
+# [user]
+#   name = Grimm
+#   email = grimm@grimm.com
+#
+# [includeIf "gitdir:~/Developer/personal/"]
+#   path = ~/Developer/personal/.gitconfig
+#
+# [includeIf "gitdir:~/Developer/grimm/"]
+#   path = ~/Developer/grimm/.gitconfig
+#
+# [includeIf "gitdir:~/Developer/work/"]
+#   path = ~/Developer/work/.gitconfig 
+#
+# I use a Developer directory in home to hold all my projects (or would be projects)
+# So in Developer/{account} make a `.gitconfig`, which will have the user info associated with that account
+# E.g: `~/Developer/grimm/.gitconfig`:
+# [user]
+#   name = Grimm 
+#   email = grimm@grimm.com 
+#
+# And so on for each account, 
+# BE SURE TO RUN THIS WHEN IN AN ACCOUNT DIRECTORY:
+# `ssh-add ~/.ssh/GITHUB_ACCOUNT_SSHKEY_FILE`
+#
+# And when pulling from your repo you'll add the -work or -personal to the url 
+# for instance:
+# git@github.com-work:{user}/{repo}.git 

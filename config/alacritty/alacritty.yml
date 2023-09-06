@@ -1,0 +1,19 @@
+live_config_reload: true
+
+import:
+ - ~/.config/alacritty/themes/themes/catppuccin.yaml
+
+window:
+  opacity: 0.85
+  padding:
+    x: 18
+    y: 16
+  dynamic_padding: false
+  decorations: buttonless
+
+font:
+  normal:
+    family: "SFMono Nerd Font"
+    style: Regular
+  size: 15.0
+  
