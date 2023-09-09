@@ -126,6 +126,7 @@ alias za='zellij a'
 alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT='h' NNN_PLUG='p:preview-tui' nnn'
 alias search='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias cd="z"
+alias ssh="kitty +kitten ssh"
 
 export PATH=$PATH:~/.spicetify
 
