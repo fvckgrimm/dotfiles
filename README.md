@@ -9,8 +9,8 @@ Hyprpaper will need to be edited with whatever wallpaper you choose.
 nvim is using [NvChad](https://github.com/NvChad/NvChad) but i dungoofed commiting it with this.
 
 
-![](./assests/2023-09-08T21:21:01,625316709-07:00.png)
+![](./assets/screencapture.png)
 
-- Several components were taken from [linuxmobile's dotfiles](https://github.com/linuxmobile/hyprland-dots) to jumpstart the rice.
+- Several components were taken from [linuxmobile's dotfiles](https://github.com/linuxmobile/hyprland-dots) to jumpstart the rice. (reccomend reading his [installation](https://github.com/linuxmobile/hyprland-dots#installation-arch-based-only) section for dependencies and other useful apps.)
 
 - Firefox is using [catppuccin](https://github.com/catppuccin/firefox) theme and [vertical tabs](https://github.com/ranmaru22/firefox-vertical-tabs) via [tab center reborn](https://addons.mozilla.org/en-US/firefox/addon/tabcenter-reborn/).
