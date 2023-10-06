@@ -104,6 +104,24 @@ function summary() {
     if [[ $3 != "failed" ]]; then
         wl-copy < "$_target_file_" >> $_LOG_FILE_ 2>&1
 
+        # Upload the screenshot to the ShareX server
+        upload_url=$(curl -X POST \
+          https://file.host \
+          -H 'Authorization: TOKEN' \
+          -H 'X-Ass-OG-Author: AUTHOR' \
+          -H 'X-Ass-Access: random' \
+          -H 'X-Ass-OG-Color: &random' \
+          -H 'X-Ass-OG-Provider: &filename | &size' \
+          -H 'Content-Type: multipart/form-data' \
+          -F "file=@$_target_file_" \
+          -F 'URL={json:.resource}' \
+          -F 'ThumbnailURL={json:.thumbnail}' \
+          -F 'DeletionURL={json:.delete}' \
+          | jq -r '.resource')
+
+        # Copy the upload URL to the clipboard
+        echo $upload_url | wl-copy >> $_LOG_FILE_ 2>&1
+
         message="${_notif_message_} Runtime: $hours hours, $minutes minutes, $seconds seconds"
         dunstify -i "$_target_file_" -t 10000 "Screenshot Tool" "$message" -a "Screenshot Tool"
     fi
