@@ -81,7 +81,7 @@ bind-key k up article
 # -- macros ---------------------------------------------------------------------
 
 macro , open-in-browser
-macro v set browser "mpv"; open-in-browser ; set browser piper
+macro v set browser "setsid -f mpv"; open-in-browser ; set browser linkhandler
 
 
 # -- misc ----------------------------------------------------------------------
