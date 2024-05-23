@@ -1,0 +1,19 @@
+lastupdatecheck: 0
+recentrepos:
+    - /home/grimm/Developer/grimm/projects/dotfiles
+    - /home/grimm/Developer/grimm/projects/nix-dotfiles
+    - /home/grimm/Developer/grimm/projects/ftlg
+    - /home/grimm/Developer/agnostos/projects/pocketbase-scripts
+    - /home/grimm/Developer/agnostos/projects/nim-fansly-scraper
+    - /home/grimm/Developer/agnostos/projects/camsite-source/camsite
+    - /home/grimm/Developer/agnostos/projects/camsite-source/pb-db/scripts
+startuppopupversion: 5
+lastversion: 0.42.0
+customcommandshistory: []
+hidecommandlog: false
+ignorewhitespaceindiffview: false
+diffcontextsize: 3
+localbranchsortorder: recency
+remotebranchsortorder: alphabetical
+gitlogorder: topo-order
+gitlogshowgraph: always
