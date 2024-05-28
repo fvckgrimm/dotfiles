@@ -7,5 +7,7 @@
     "CtrlSpace": "command:lspcompletion",
     "CtrlUnderscore": "lua:comment.comment",
     "F5": "lua:wc.wordCount",
-    "F6": "command-edit:gorename "
+    "F6": "command-edit:gorename ",
+    "Ctrl-n": "command:tree",
+    "Ctrl-x": "Save,Quit"
 }
