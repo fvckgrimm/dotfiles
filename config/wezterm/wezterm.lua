@@ -1,4 +1,5 @@
 local wezterm = require("wezterm")
+local c = wezterm.config_builder()
 
 local function font_with_fallback(name, params)
 	local names = { name, "Apple Color Emoji", "azuki_font" }
@@ -7,9 +8,44 @@ end
 
 local font_name = "JetBrainsMonoNL NF"
 
+wezterm.plugin.require("https://github.com/nekowinston/wezterm-bar").apply_to_config(c, {
+  position = "bottom",
+  max_width = 32,
+  dividers = "slant_right", -- or "slant_left", "arrows", "rounded", false
+  indicator = {
+    leader = {
+      enabled = true,
+      off = " ",
+      on = " ",
+    },
+    mode = {
+      enabled = true,
+      names = {
+        resize_mode = "RESIZE",
+        copy_mode = "VISUAL",
+        search_mode = "SEARCH",
+      },
+    },
+  },
+  tabs = {
+    numerals = "roman", -- arabic or "roman"
+    pane_count = "superscript", -- "superscript" or "subscript", false
+    brackets = {
+      active = { "", ":" },
+      inactive = { "", ":" },
+    },
+  },
+  clock = { -- note that this overrides the whole set_right_status
+    enabled = true,
+    format = "%H:%M", -- use https://wezfurlong.org/wezterm/config/lua/wezterm.time/Time/format.html
+  },
+})
+
 return {
 	-- OpenGL for GPU acceleration, Software for CPU
 	front_end = "OpenGL",
+
+    audible_bell = "Disabled";
 
 	color_scheme = "Catppuccin Mocha",
 
@@ -44,8 +80,8 @@ return {
 	disable_default_key_bindings = true,
 	keys = {
 		{
-			key = [[\]],
-			mods = "CTRL|ALT",
+			key = [[|]],
+			mods = "CTRL|SHIFT",
 			action = wezterm.action({
 				SplitHorizontal = { domain = "CurrentPaneDomain" },
 			}),
@@ -58,48 +94,48 @@ return {
 			}),
 		},
 		{
-			key = "q",
-			mods = "CTRL|SHIFT",
-			action = wezterm.action({ CloseCurrentPane = { confirm = false } }),
+		  key = "q",
+		  mods = "CTRL|SHIFT",
+		  action = wezterm.action({ CloseCurrentPane = { confirm = false } }),
 		},
 		{
 			key = "h",
-			mods = "CTRL|SHIFT",
+			mods = "CTRL",
 			action = wezterm.action({ ActivatePaneDirection = "Left" }),
 		},
 		{
 			key = "l",
-			mods = "CTRL|SHIFT",
+			mods = "CTRL",
 			action = wezterm.action({ ActivatePaneDirection = "Right" }),
 		},
 		{
 			key = "k",
-			mods = "CTRL|SHIFT",
+			mods = "CTRL",
 			action = wezterm.action({ ActivatePaneDirection = "Up" }),
 		},
 		{
 			key = "j",
-			mods = "CTRL|SHIFT",
+			mods = "CTRL",
 			action = wezterm.action({ ActivatePaneDirection = "Down" }),
 		},
 		{
 			key = "h",
-			mods = "CTRL|SHIFT|ALT",
+			mods = "CTRL|SHIFT",
 			action = wezterm.action({ AdjustPaneSize = { "Left", 1 } }),
 		},
 		{
 			key = "l",
-			mods = "CTRL|SHIFT|ALT",
+			mods = "CTRL|SHIFT",
 			action = wezterm.action({ AdjustPaneSize = { "Right", 1 } }),
 		},
 		{
 			key = "k",
-			mods = "CTRL|SHIFT|ALT",
+			mods = "CTRL|SHIFT",
 			action = wezterm.action({ AdjustPaneSize = { "Up", 1 } }),
 		},
 		{
 			key = "j",
-			mods = "CTRL|SHIFT|ALT",
+			mods = "CTRL|SHIFT",
 			action = wezterm.action({ AdjustPaneSize = { "Down", 1 } }),
 		},
 		{ -- browser-like bindings for tabbing
@@ -123,9 +159,14 @@ return {
 			action = wezterm.action({ ActivateTabRelative = -1 }),
 		}, -- standard copy/paste bindings
 		{
-			key = "x",
-			mods = "CTRL|SHIFT",
+		    key = "x",
+			mods = "CTRL",
 			action = "ActivateCopyMode",
+		},
+        {
+		    key = "p",
+			mods = "CTRL|SHIFT",
+			action = "ActivateCommandPalette",
 		},
 		{
 			key = "v",
@@ -152,13 +193,15 @@ return {
 	-- Tab Bar
 	enable_tab_bar = true,
 	hide_tab_bar_if_only_one_tab = true,
-	show_tab_index_in_tab_bar = false,
+	show_tab_index_in_tab_bar = true,
 	tab_bar_at_bottom = true,
+    use_fancy_tab_bar = false,
 
 	-- General
 	automatically_reload_config = true,
 	inactive_pane_hsb = { saturation = 1.0, brightness = 1.0 },
-	window_background_opacity = 0.5,
+	window_background_opacity = 0.8,
 	window_close_confirmation = "NeverPrompt",
 	window_frame = { active_titlebar_bg = "#45475a", font = font_with_fallback(font_name, { bold = true }) },
 }
+
