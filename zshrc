@@ -120,13 +120,20 @@ export PATH="$PATH:/usr/local/Cellar/john-jumbo/1.9.0_1/share/john"
 #####
 # Aliases
 #####
-alias at='tmux attach'
+alias c='clear'
+alias cat='bat --theme=base16 --number --color=always --paging=never --tabs=2 --wrap=never'
+alias cp='cp -iv'
+alias du='dust'
+alias grep='rg'
+alias tree='eza --tree --icons --tree'
+alias ytmp3='yt-dlp --ignore-errors -x --audio-format mp3 -f bestaudio --audio-quality 0 --embed-metadata --embed-thumbnail --output '\''%(title)s.%(ext)s'\'''
 alias ls='exa -L=1 -lhFTag'
-alias za='zellij a'
+alias zc='zellij -s'
+alias zl='zellij ls'
 alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT='h' NNN_PLUG='p:preview-tui' nnn'
 alias search='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
-alias cd="z"
-alias ssh="kitty +kitten ssh"
+alias cd='z'
+alias ssh='kitty +kitten ssh'
 
 export PATH=$PATH:~/.spicetify
 
@@ -164,3 +171,49 @@ pomodoro () {
 
 alias wo="pomodoro 'work'"
 alias br="pomodoro 'break'"
+
+za() {
+  if [ -z $1 ]; then
+    SELECTION=$(
+      zellij list-sessions \
+        --no-formatting \
+        | awk '{ print $1 }' \
+        | gum choose \
+          --cursor="▌" \
+          --header="Select a session to attach to" \
+          --selected="ide" \
+          --ordered --select-if-one --cursor.foreground="139"
+    )
+  else
+    SELECTION=$1
+  fi
+
+  if [ -z $SELECTION ]; then
+    return 0
+  fi
+
+  zellij attach "$(echo -e $SELECTION)"
+}
+
+zd() {
+  if [ -z $1 ]; then
+    SELECTION=$(
+      zellij list-sessions \
+        --no-formatting \
+        | awk '{ print $1 }' \
+        | gum choose \
+          --cursor="▌" \
+          --header="Select a session to delete" \
+          --selected="ide" \
+          --ordered --select-if-one --cursor.foreground="139"
+    )
+  else
+    SELECTION=$1
+  fi
+
+  if [ -z $SELECTION ]; then
+    return 0
+  fi
+
+  zellij d "$(echo -e $SELECTION)"
+}
