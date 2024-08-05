@@ -33,7 +33,7 @@ return {
         ruff_lsp = {},
         --nixd = {},
         lua_ls = {},
-        bashls = {},
+        --bashls = {},
         gopls = {
           cmd = { 'gopls' },
           filetypes = { 'go', 'gomod', 'gowork', 'gotmpl' },

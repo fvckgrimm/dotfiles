@@ -1,15 +1,16 @@
 return {
   'MeanderingProgrammer/markdown.nvim',
-  -- You can specify the version if you want
-  version = '5.0.0',
+  main = 'render-markdown',
+  opts = {},
+  name = 'render-markdown',
   ft = { 'markdown' }, -- Load only for markdown files
+  dependencies = {
+    'nvim-treesitter/nvim-treesitter',
+    'echasnovski/mini.nvim', -- Assuming you use the mini.nvim suite
+  },
   config = function()
-    require('markdown').setup {
+    require('render-markdown').setup {
       -- Add any configuration options here
     }
   end,
-  -- If there are any dependencies, you can specify them here
-  -- dependencies = {
-  --   -- Add any required dependencies
-  -- },
 }

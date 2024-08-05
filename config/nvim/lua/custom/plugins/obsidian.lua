@@ -26,11 +26,11 @@ return {
     workspaces = {
       {
         name = 'mind',
-        path = '~/Documents/Docs/Obi-vault-mind',
+        path = '~/Documents/docs/Obi-vault-mind',
       },
       {
         name = 'shared',
-        path = '~/Documents/Docs/obi-vault-shared',
+        path = '~/Documents/docs/obi-vault-shared',
       },
     },
     daily_notes = {
