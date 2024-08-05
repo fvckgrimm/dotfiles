@@ -72,7 +72,6 @@ ZSH_THEME="jovial"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  autojump
   urltools
   bgnotify
   zsh-autosuggestions
@@ -116,6 +115,7 @@ export PATH="/usr/local/opt/flameshot/bin:$PATH"
 export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
 export PATH="$PATH:/usr/local/Cellar/john-jumbo/1.9.0_1/share/john"
+export PATH="$HOME/bins:$PATH"
 
 #####
 # Aliases
@@ -127,13 +127,13 @@ alias du='dust'
 alias grep='rg'
 alias tree='eza --tree --icons --tree'
 alias ytmp3='yt-dlp --ignore-errors -x --audio-format mp3 -f bestaudio --audio-quality 0 --embed-metadata --embed-thumbnail --output '\''%(title)s.%(ext)s'\'''
-alias ls='exa -L=1 -lhFTag'
+alias ls='exa -L=1 -lhTag'
 alias zc='zellij -s'
 alias zl='zellij ls'
 alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT='h' NNN_PLUG='p:preview-tui' nnn'
 alias search='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias cd='z'
-alias ssh='kitty +kitten ssh'
+#alias ssh='kitty +kitten ssh'
 
 export PATH=$PATH:~/.spicetify
 
