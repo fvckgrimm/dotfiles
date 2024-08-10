@@ -1,23 +1,76 @@
 return {
-  'nvimdev/dashboard-nvim',
-  event = 'VimEnter',
-  opts = {
-    config = {
-      header = {
-        ' ,-.       *,---.* __  / \\',
-        " /  )    .-'       `./ /   \\",
-        "(  (   ,'            `/    /|",
-        " \\  `-'             \\'\\   / |",
-        '  `.              ,  \\ \\ /  |',
-        "   /`.          ,'-`----Y   |",
-        "  (            ;        |   '",
-        "  |  ,-.    ,-'         |  /",
-        ' |  | (   |      grimm | /',
-        ' )  | \\  `.___________|/',
-        "`--'   `--'             ",
-      },
-      -- You can add more configuration options here
-    },
-  },
-  dependencies = { { 'nvim-tree/nvim-web-devicons' } },
+	"nvimdev/dashboard-nvim",
+	event = "VimEnter",
+	opts = {
+		theme = "doom",
+		config = {
+			header = {
+				" ",
+				" ",
+				" ",
+				" ,-.       *,---.* __  / \\",
+				" /  )    .-'       `./ /   \\",
+				"(  (   ,'            `/    /|",
+				" \\  `-'             \\'\\   / |",
+				"  `.              ,  \\ \\ /  |",
+				"   /`.          ,'-`----Y   |",
+				"  (            ;        |   '",
+				"  |  ,-.    ,-'         |  /",
+				" |  | (   |      grimm | /",
+				" )  | \\  `.___________|/",
+				"`--'   `--'             ",
+				" ",
+				" ",
+				" ",
+			},
+			-- You can add more configuration options here
+			center = {
+				{
+					icon = "󰱼 ",
+					icon_hl = "Title",
+					desc = "Find File           ",
+					desc_hl = "String",
+					key = "f",
+					--keymap = "SPC f",
+					key_hl = "Number",
+					key_format = " %s", -- remove default surrounding `[]`
+					action = "lua require('telescope.builtin').find_files()",
+				},
+				{
+					icon = "󰊄 ",
+					desc = "Find Text",
+					key = "t",
+					--keymap = "SPC f",
+					key_format = " %s", -- remove default surrounding `[]`
+					action = "lua require('telescope.builtin').live_grep()",
+				},
+				{
+					icon = " ",
+					desc = "Recent Files",
+					key = "r",
+					--keymap = "SPC r",
+					key_format = " %s",
+					action = "lua require('telescope.builtin').oldfiles()",
+				},
+				{
+					icon = " ",
+					desc = "New File",
+					key = "n",
+					--keymap = "SPC n",
+					key_format = " %s",
+					action = "enew",
+				},
+				{
+					icon = " ",
+					desc = "Quit Neovim",
+					key = "x",
+					--keymap = "SPC q",
+					key_format = " %s",
+					action = "qa",
+				},
+			},
+			footer = {},
+		},
+	},
+	dependencies = { { "nvim-tree/nvim-web-devicons" } },
 }
