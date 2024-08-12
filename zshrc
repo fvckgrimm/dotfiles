@@ -77,6 +77,7 @@ plugins=(
   zsh-autosuggestions
   zsh-syntax-highlighting
   zsh-history-enquirer
+  zsh-fzf-history-search
   jovial
 )
 

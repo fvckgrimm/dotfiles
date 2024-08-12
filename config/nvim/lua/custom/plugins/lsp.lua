@@ -1,7 +1,7 @@
 return {
   {
     'neovim/nvim-lspconfig',
-    event = { 'BufReadPre', 'BufNewFile' },
+    --event = { 'BufReadPre', 'BufNewFile' },
     dependencies = {
       'mason.nvim',
       'williamboman/mason-lspconfig.nvim',
@@ -32,7 +32,7 @@ return {
         },
         ruff_lsp = {},
         --nixd = {},
-        lua_ls = {},
+        --lua_ls = {},
         --bashls = {},
         gopls = {
           cmd = { 'gopls' },
@@ -62,7 +62,18 @@ return {
 
       mason_lspconfig.setup_handlers {
         function(server_name)
-          lspconfig[server_name].setup(opts.servers[server_name])
+          local server_opts = opts.servers[server_name] or {}
+          -- Add some debugging
+          --print('Setting up ' .. server_name)
+          --print(vim.inspect(server_opts))
+
+          -- Add error handling
+          local setup_ok, setup_err = pcall(function()
+            lspconfig[server_name].setup(server_opts)
+          end)
+          if not setup_ok then
+            print('Error setting up ' .. server_name .. ': ' .. setup_err)
+          end
         end,
       }
     end,
