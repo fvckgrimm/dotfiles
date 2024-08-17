@@ -9,43 +9,43 @@ end
 local font_name = "JetBrainsMonoNL NF"
 
 wezterm.plugin.require("https://github.com/nekowinston/wezterm-bar").apply_to_config(c, {
-  position = "bottom",
-  max_width = 32,
-  dividers = "slant_right", -- or "slant_left", "arrows", "rounded", false
-  indicator = {
-    leader = {
-      enabled = true,
-      off = " ",
-      on = " ",
-    },
-    mode = {
-      enabled = true,
-      names = {
-        resize_mode = "RESIZE",
-        copy_mode = "VISUAL",
-        search_mode = "SEARCH",
-      },
-    },
-  },
-  tabs = {
-    numerals = "roman", -- arabic or "roman"
-    pane_count = "superscript", -- "superscript" or "subscript", false
-    brackets = {
-      active = { "", ":" },
-      inactive = { "", ":" },
-    },
-  },
-  clock = { -- note that this overrides the whole set_right_status
-    enabled = true,
-    format = "%H:%M", -- use https://wezfurlong.org/wezterm/config/lua/wezterm.time/Time/format.html
-  },
+	position = "bottom",
+	max_width = 32,
+	dividers = "slant_right", -- or "slant_left", "arrows", "rounded", false
+	indicator = {
+		leader = {
+			enabled = true,
+			off = " ",
+			on = " ",
+		},
+		mode = {
+			enabled = true,
+			names = {
+				resize_mode = "RESIZE",
+				copy_mode = "VISUAL",
+				search_mode = "SEARCH",
+			},
+		},
+	},
+	tabs = {
+		numerals = "roman", -- arabic or "roman"
+		pane_count = "superscript", -- "superscript" or "subscript", false
+		brackets = {
+			active = { "", ":" },
+			inactive = { "", ":" },
+		},
+	},
+	clock = { -- note that this overrides the whole set_right_status
+		enabled = true,
+		format = "%H:%M", -- use https://wezfurlong.org/wezterm/config/lua/wezterm.time/Time/format.html
+	},
 })
 
 return {
 	-- OpenGL for GPU acceleration, Software for CPU
 	front_end = "OpenGL",
 
-    audible_bell = "Disabled";
+	audible_bell = "Disabled",
 
 	color_scheme = "Catppuccin Mocha",
 
@@ -94,9 +94,9 @@ return {
 			}),
 		},
 		{
-		  key = "q",
-		  mods = "CTRL|SHIFT",
-		  action = wezterm.action({ CloseCurrentPane = { confirm = false } }),
+			key = "q",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action({ CloseCurrentPane = { confirm = false } }),
 		},
 		{
 			key = "h",
@@ -159,12 +159,12 @@ return {
 			action = wezterm.action({ ActivateTabRelative = -1 }),
 		}, -- standard copy/paste bindings
 		{
-		    key = "x",
+			key = "x",
 			mods = "CTRL",
 			action = "ActivateCopyMode",
 		},
-        {
-		    key = "p",
+		{
+			key = "p",
 			mods = "CTRL|SHIFT",
 			action = "ActivateCommandPalette",
 		},
@@ -195,7 +195,7 @@ return {
 	hide_tab_bar_if_only_one_tab = true,
 	show_tab_index_in_tab_bar = true,
 	tab_bar_at_bottom = true,
-    use_fancy_tab_bar = false,
+	use_fancy_tab_bar = false,
 
 	-- General
 	automatically_reload_config = true,
@@ -204,4 +204,3 @@ return {
 	window_close_confirmation = "NeverPrompt",
 	window_frame = { active_titlebar_bg = "#45475a", font = font_with_fallback(font_name, { bold = true }) },
 }
-

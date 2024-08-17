@@ -32,6 +32,10 @@ return {
         name = 'shared',
         path = '~/Documents/docs/obi-vault-shared',
       },
+      {
+        name = 'blog',
+        path = '~/Developer/grimm/projects/personal-site/content/posts',
+      },
     },
     daily_notes = {
       -- Optional, if you keep daily notes in a separate directory.

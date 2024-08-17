@@ -111,7 +111,7 @@ source $ZSH/oh-my-zsh.sh
 export HOMEBREW_NO_AUTO_UPDATE=true
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
-export PATH="~/.cargo/bin:$PATH"
+#export PATH="~/.cargo/bin:$PATH"
 export PATH="/usr/local/opt/flameshot/bin:$PATH"
 export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
@@ -135,6 +135,7 @@ alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT='h' NNN_PLUG='p:preview-tui' nnn'
 alias search='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias cd='z'
 #alias ssh='kitty +kitten ssh'
+alias mkpost='go run . artisan create:post'
 
 export PATH=$PATH:~/.spicetify
 
@@ -218,3 +219,6 @@ zd() {
 
   zellij d "$(echo -e $SELECTION)"
 }
+
+# Created by `pipx` on 2024-08-13 06:32:12
+export PATH="$PATH:/home/grimm/.local/bin"
