@@ -14,8 +14,8 @@ TERM = "xterm-256color"
 size = 10.0
 
 [font.normal]
-# family = "SF Mono Powerline"
-family = "JetBrainsMonoNL NF"
+family = "SF Mono Powerline"
+#family = "JetBrainsMonoNL NF"
 style = "Regular"
 
 [window]
