@@ -48,7 +48,7 @@ return {
 
 	audible_bell = "Disabled",
 
-	color_scheme = "Catppuccin Mocha",
+	color_scheme = "Catppuccin Frappe",
 
 	-- Font config
 	font = font_with_fallback(font_name),
