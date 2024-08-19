@@ -113,5 +113,13 @@ vim.filetype.add {
   },
 }
 
+require('sg').setup {
+  -- Pass your own custom attach function
+  --    If you do not pass your own attach function, then the following maps are provide:
+  --        - gd -> goto definition
+  --        - gr -> goto references
+  --on_attach = your_custom_lsp_attach_function
+}
+
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

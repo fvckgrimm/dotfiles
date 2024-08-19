@@ -111,7 +111,7 @@ source $ZSH/oh-my-zsh.sh
 export HOMEBREW_NO_AUTO_UPDATE=true
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
-#export PATH="~/.cargo/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="/usr/local/opt/flameshot/bin:$PATH"
 export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
@@ -222,3 +222,10 @@ zd() {
 
 # Created by `pipx` on 2024-08-13 06:32:12
 export PATH="$PATH:/home/grimm/.local/bin"
+
+# bun completions
+[ -s "/home/grimm/.bun/_bun" ] && source "/home/grimm/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
