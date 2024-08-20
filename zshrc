@@ -151,6 +151,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:somplete:__zoxide_z:*' fzf-preview 'eza -1 --color=always $realpath'
 
 # Keybinings
 bindkey -e
