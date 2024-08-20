@@ -136,6 +136,7 @@ alias search='fzf --preview "bat --color=always --style=numbers --line-range=:50
 alias cd='z'
 #alias ssh='kitty +kitten ssh'
 alias mkpost='go run . artisan create:post'
+alias refreshenv='source ~/.zshrc'
 
 export PATH=$PATH:~/.spicetify
 
@@ -174,27 +175,9 @@ pomodoro () {
 alias wo="pomodoro 'work'"
 alias br="pomodoro 'break'"
 
-za() {
-  if [ -z $1 ]; then
-    SELECTION=$(
-      zellij list-sessions \
-        --no-formatting \
-        | awk '{ print $1 }' \
-        | gum choose \
-          --cursor="▌" \
-          --header="Select a session to attach to" \
-          --selected="ide" \
-          --ordered --select-if-one --cursor.foreground="139"
-    )
-  else
-    SELECTION=$1
-  fi
-
-  if [ -z $SELECTION ]; then
-    return 0
-  fi
-
-  zellij attach "$(echo -e $SELECTION)"
+0x0 () {
+  d=$(curl -fsSL -F"file=@$1" -Fexpires=1 -Fsecret= https://0x0.st)
+  echo "$d/$1"
 }
 
 zd() {
