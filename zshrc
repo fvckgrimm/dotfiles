@@ -108,6 +108,16 @@ alias br="pomodoro 'break'"
 
 # Functions 
 
+pip() {
+    local output
+    output=$(~/bins/pyenv.sh "$@")
+    if [[ $output == source* ]] || [[ $output == deactivate* ]]; then
+        eval "$output"
+    else
+        echo "$output"
+    fi
+}
+
 0x0 () {
   d=$(curl -fsSL -F"file=@$1" -Fexpires=1 -Fsecret= https://0x0.st)
   echo "$d/$1"
