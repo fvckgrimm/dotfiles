@@ -68,6 +68,7 @@ alias cd='z'
 #alias ssh='kitty +kitten ssh'
 alias mkpost='go run . artisan create:post'
 alias refreshenv='source ~/.zshrc'
+alias weather='curl wttr.in'
 
 export PATH=$PATH:~/.spicetify
 
