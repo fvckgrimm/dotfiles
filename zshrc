@@ -39,6 +39,7 @@ source $ZSH/oh-my-zsh.sh
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
 
+export EDITOR="nvim"
 export HOMEBREW_NO_AUTO_UPDATE=true
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
