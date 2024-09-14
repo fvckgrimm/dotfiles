@@ -56,6 +56,8 @@ return {
       local lspconfig = require 'lspconfig'
       local mason_lspconfig = require 'mason-lspconfig'
 
+      lspconfig.gleam.setup {}
+
       mason_lspconfig.setup {
         ensure_installed = vim.tbl_keys(opts.servers),
       }

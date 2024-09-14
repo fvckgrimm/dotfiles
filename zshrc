@@ -148,6 +148,18 @@ zd() {
   zellij d "$(echo -e $SELECTION)"
 }
 
+stream_video() {
+    local host="$1"
+    local video_path="$2"
+    
+    if [ -z "$host" ] || [ -z "$video_path" ]; then
+        echo "Usage: stream_video <host> <remote_path_to_video>"
+        return 1
+    fi
+    
+    ssh "$host" "ffmpeg -i '$video_path' -c:v libx264 -c:a aac -b:v 1M -b:a 150k -f mpegts -" | mpv -
+}
+
 # Created by `pipx` on 2024-08-13 06:32:12
 export PATH="$PATH:/home/grimm/.local/bin"
 
@@ -176,3 +188,5 @@ setopt hist_ignore_all_dups
 setopt hist_save_no_dups
 setopt hist_ignore_dups
 setopt hist_find_no_dups
+
+source /home/grimm/.config/broot/launcher/bash/br
