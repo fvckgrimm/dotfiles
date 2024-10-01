@@ -13,6 +13,10 @@ end
 #    end
 #end
 
+set -Ux fifc_editor nvim
+# Bind fzf completions to ctrl-x
+#set -U fifc_keybinding \cx
+
 set -gx EDITOR nvim
 set -gx VOLTA_HOME $HOME/.volta
 set -gx GOPATH $HOME/go
