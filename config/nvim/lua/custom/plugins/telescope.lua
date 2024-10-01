@@ -32,6 +32,13 @@ return {
     { '<leader>so', '<cmd>Telescope vim_options<cr>', desc = 'Options' },
     { '<leader>sR', '<cmd>Telescope resume<cr>', desc = 'Resume' },
     { '<leader>cs', '<cmd>Telescope colorscheme<cr>', desc = 'Colorscheme preview' },
+
+    { '<leader>lR', '<cmd>Telescope lsp_references<cr>', desc = 'Find all references' },
+    { '<leader>lI', '<cmd>Telescope lsp_implementations<cr>', desc = 'Find implementations' },
+    { '<leader>lS', '<cmd>Telescope lsp_document_symbols<cr>', desc = 'Document symbols' },
+    { '<leader>lW', '<cmd>Telescope lsp_dynamic_workspace_symbols<cr>', desc = 'Workspace symbols' },
+    { '<leader>lD', '<cmd>Telescope lsp_definitions<cr>', desc = 'Go to definition' },
+    { '<leader>lt', '<cmd>Telescope lsp_type_definitions<cr>', desc = 'Go to type definition' },
   },
   opts = {
     defaults = {

@@ -83,3 +83,28 @@ vim.keymap.set('n', '<leader>c', '<CMD>:bp | bd #<CR>')
 
 vim.keymap.set('n', '<leader>e', ':Neotree toggle<CR>', { noremap = true, silent = true })
 -- vim: ts=2 sts=2 sw=2 et
+
+-- Go to definition
+vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition' })
+-- Go back to previous location
+vim.keymap.set('n', '<C-o>', '<C-o>', { desc = 'Go back to previous location' })
+-- Go forward
+vim.keymap.set('n', '<C-i>', '<C-i>', { desc = 'Go forward' })
+
+-- Show function signature (parameters)
+vim.keymap.set('n', '<leader>k', vim.lsp.buf.signature_help, { desc = 'Show function signature' })
+
+-- Hover information (which often includes parameter info)
+vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Show hover information' })
+
+-- Find all references
+vim.keymap.set('n', 'gr', vim.lsp.buf.references, { desc = 'Find all references' })
+
+-- Find implementations
+vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, { desc = 'Go to implementation' })
+
+-- Show all symbols in current document
+vim.keymap.set('n', '<leader>so', '<cmd>Telescope lsp_document_symbols<CR>', { desc = 'Show document symbols' })
+
+-- Show all symbols in workspace
+vim.keymap.set('n', '<leader>sW', '<cmd>Telescope lsp_dynamic_workspace_symbols<CR>', { desc = 'Show workspace symbols' })
