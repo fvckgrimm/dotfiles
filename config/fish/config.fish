@@ -44,6 +44,7 @@ alias search='sk --preview "bat --color=always --style=numbers --line-range=:500
 alias mkpost='go run . artisan create:post'
 alias refreshenv='source ~/.config/fish/config.fish'
 alias weather='curl wttr.in'
+alias gitui='gitui -t catppuccin-frappe.ron'
 
 # nnn stuff
 set -gx NNN_FIFO /tmp/nnn.fifo
