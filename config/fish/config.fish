@@ -39,6 +39,8 @@ alias ytmp3='yt-dlp --ignore-errors -x --audio-format mp3 -f bestaudio --audio-q
 #alias ls='exa -L=1 -lhTag'
 alias zc='zellij -s'
 alias zl='zellij ls'
+alias zac='za-no-dap pick'
+alias hx='helix'
 alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT=h NNN_PLUG=p:preview-tui nnn'
 alias search='sk --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias mkpost='go run . artisan create:post'
