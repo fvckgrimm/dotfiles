@@ -9,7 +9,6 @@ stow
 chezmoi
 qutebrowser
 brave-bin
-librewolf-bin
 firefox
 kitty
 ueberzugpp
@@ -35,7 +34,6 @@ mullvad-vpn
 openvpn
 ranger
 yazi
-librewolf
 thunderbird
 opensnitch
 opensnitch-ui

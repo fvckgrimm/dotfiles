@@ -86,7 +86,7 @@ NNN_SPLIT='h'
 
 
 # Shell integrations
-
+eval "$(starship init zsh)"
 eval "$(zoxide init --cmd z --hook prompt zsh)"
 eval "$(fzf --zsh)"
 
