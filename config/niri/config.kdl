@@ -330,6 +330,7 @@ binds {
     //Mod+Period {spawn "rofi" "-show" "emoji" "-emoji-format" "{emoji}" "-modi" "emoji:rofimoji" ;}
     Mod+Period {spawn "rofimoji" "--action" "copy"; }
     Mod+V {spawn "bash" "-c" "cliphist list | rofi -dmenu | cliphist decode | wl-copy";}
+    Mod+Shift+X {spawn "pkill" "xwayland-satellite" "&&" "xwayland-satellite";}
 
     // You can also use a shell. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument in the end.
