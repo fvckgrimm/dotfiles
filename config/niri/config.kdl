@@ -59,6 +59,7 @@ input {
 }
 
 environment {
+    BEMOJI_PICKER_CMD "fuzzel -d"
     DISPLAY ":0"
 }
 
@@ -332,8 +333,11 @@ binds {
     Super+Alt+L {spawn "wlogout"; }
     Mod+T {spawn "Thunar"; }
     //Mod+Period {spawn "rofi" "-show" "emoji" "-emoji-format" "{emoji}" "-modi" "emoji:rofimoji" ;}
-    Mod+Period {spawn "rofimoji" "--action" "copy"; }
-    Mod+V {spawn "bash" "-c" "cliphist list | rofi -dmenu | cliphist decode | wl-copy";}
+    //Mod+Period {spawn "rofimoji" "--action" "copy"; }
+    Mod+Period {spawn "bemoji";}
+    //Mod+V {spawn "bash" "-c" "cliphist list | rofi -dmenu | cliphist decode | wl-copy";}
+    Mod+V {spawn "bash" "-c" "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy";}
+    Mod+W {spawn "bash" "-c" "cat ~/.local/wordlists/wordnet-index.txt | ansi2txt | fuzzel --dmenu | wl-copy";}
     Mod+Shift+X {spawn "pkill" "xwayland-satellite" "&&" "xwayland-satellite";}
 
     // You can also use a shell. Do this if you need pipes, multiple commands, etc.
