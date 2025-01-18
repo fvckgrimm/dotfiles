@@ -5,8 +5,8 @@
   font-weight: 900;
   margin: 0;
   padding: 0;
-  transition-property: background-color;
-  transition-duration: 0.5s;
+  /*transition-property: background-color;
+  transition-duration: 0.5s;*/
 }
 
 
@@ -15,19 +15,19 @@
     border: none;
     border-radius: 3px;
     min-height: 0;
-    margin: 0.2em 0.3em 0.2em 0.3em;
+    margin: 0.2em 0.3em; /*0.2em 0.3em*/
 }
 
 /* The whole bar */
 #waybar {
     /*background: @bg;*/
-    background-color: transparent;
+    background-color: rgba(30, 30, 30, 0.9);
     /*color: @light;*/
     color: #ffffff;
-    transition-property: background-color;
+    /*transition-property: background-color;
     transition-duration: 0.5s;
-    /*border-top: 8px transparent;*/
-    border-radius: 0px;
+    border-top: 8px transparent;
+    border-radius: 0px;*/
     margin: 0px 0px;
 }
 
@@ -99,11 +99,11 @@ window#waybar.hidden {
 #custom-weather.showyIcyDay,
 #custom-weather.snowyIcyNight,
 #custom-weather.default {
-  padding: 0px 15px;
+  padding: 0px 10px;
   color: #e5e5e5;
   /* color: #bf616a; */
-  border-radius: 20px;
-  background-color: #1e1e1e;
+  border-radius: 0;
+  background-color: transparent;
 }
 
 #window,
@@ -119,8 +119,8 @@ window#waybar.hidden {
 }
 
 #memory {
-  color: #ebcb8b;
-  background-color: #1e1e1e;
+  color: #ffcc00;
+  /*background-color: #1e1e1e;*/
 }
 
 #custom-power-menu {
@@ -179,7 +179,7 @@ window#waybar.hidden {
 }
 
 #pulseaudio {
-  color: #7d9bba;
+  color: #ff00ff;
 }
 
 #backlight {
@@ -193,7 +193,7 @@ window#waybar.hidden {
 }
 
 #battery {
-  color: #c0caf5;
+  color: #00ff9d;
   /* background-color: #90b1b1; */
 }
 
@@ -204,15 +204,21 @@ window#waybar.hidden {
   /* background-color: #26a65b; */
 }
 
-@keyframes blink {
+/*@keyframes blink {
   to {
     background-color: rgba(30, 34, 42, 0.5);
     color: #abb2bf;
   }
+}*/
+
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
 }
 
 #battery.critical:not(.charging) {
-  color: #f53c3c;
+  color: #ff0000;
   animation-name: blink;
   animation-duration: 0.5s;
   animation-timing-function: linear;
@@ -264,6 +270,10 @@ label:focus {
 
 #temperature.critical {
   background-color: #eb4d4b;
+}
+
+#tray {
+  background-color: transparent;
 }
 
 #tray > .passive {

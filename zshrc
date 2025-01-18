@@ -67,6 +67,7 @@ alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT='h' NNN_PLUG='p:preview-tui' nnn'
 alias search='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias cd='z'
 #alias ssh='kitty +kitten ssh'
+alias ssh='TERM=xterm-256color ssh'
 alias mkpost='go run . artisan create:post'
 alias refreshenv='source ~/.zshrc'
 alias weather='curl wttr.in'
@@ -190,3 +191,9 @@ setopt hist_ignore_dups
 setopt hist_find_no_dups
 
 source /home/grimm/.config/broot/launcher/bash/br
+
+## [Completion]
+## Completion scripts setup. Remove the following line to uninstall
+[[ -f /home/grimm/.dart-cli-completion/zsh-config.zsh ]] && . /home/grimm/.dart-cli-completion/zsh-config.zsh || true
+## [/Completion]
+

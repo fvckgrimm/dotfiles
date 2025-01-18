@@ -86,7 +86,7 @@ output "eDP-1" {
     mode "2560x1660@60.001"
 
     // You can use integer or fractional scale, for example use 1.5 for 150% scale.
-    scale 1.75
+    scale 2
 
     // Transform allows to rotate the output counter-clockwise, valid values are:
     // normal, 90, 180, 270, flipped, flipped-90, flipped-180 and flipped-270.
@@ -101,7 +101,7 @@ output "eDP-1" {
     // so to put another output directly adjacent to it on the right, set its x to 1920.
     // If the position is unset or results in an overlap, the output is instead placed
     // automatically.
-    position x=-1280 y=100
+    position x=-1280 y=210
 }
 
 output "DP-2" {
@@ -224,7 +224,7 @@ layout {
 // spawn-at-startup "alacritty" "-e" "fish"
 
 spawn-at-startup "~/.config/hypr/scripts/resetxdgportal.sh"
-spawn-at-startup "wlsunset" "-t" "5200" "-s" "9:00" "-s" "19:30"
+spawn-at-startup "wlsunset" "-t" "5200" "-S" "9:00" "-s" "19:30"
 spawn-at-startup "systemctl" "--user" "restart" "pipewire"
 spawn-at-startup "~/.config/hypr/setwall.sh"
 spawn-at-startup "waybar" 
@@ -322,7 +322,10 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+Return { spawn "wezterm"; }
+    //Mod+Return { spawn "wezterm"; }
+    //Mod+Return { spawn "rio"; }
+    //Mod+Return { spawn "kitty"; }
+    Mod+Return { spawn "ghostty"; }
     Mod+Space { spawn "fuzzel"; }
     //Super+Alt+L { spawn "swaylock"; }
     Super+Alt+L {spawn "wlogout"; }
@@ -492,7 +495,7 @@ binds {
     // Mod+Tab { focus-workspace-previous; }
 
     // Consume one window from the right into the focused column.
-    Mod+Comma  { consume-window-into-column; }
+    //Mod+Comma  { consume-window-into-column; }
     // Expel one window from the focused column to the right.
     //Mod+Period { expel-window-from-column; }
 
