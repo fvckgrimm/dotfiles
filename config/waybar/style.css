@@ -36,7 +36,8 @@ window#waybar.hidden {
 }
 
 #workspaces button {
-  padding: 0 0px;
+  padding: 0 5px;
+  margin: 0 2px;
   color: #7984a4;
   background-color: transparent;
   /* Use box-shadow instead of border so the text isn't offset */
@@ -138,7 +139,7 @@ window#waybar.hidden {
 }
 
 #custom-weather {
-    color: #00ccff;
+    color: #c8d2e0;
     font-weight: bold;
     padding: 0 10px;
 }
@@ -270,8 +271,15 @@ label:focus {
   background-color: #ffa000;
 }
 
+#temperature, 
+#custom-weather {
+    background-color: transparent;
+    padding: 0 8px;
+    margin: 0;
+}
+
 #temperature {
-    color: #00ffbb;
+    color: #c8d2e0;
 }
 
 #temperature.critical {

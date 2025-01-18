@@ -17,13 +17,15 @@
 
     "modules-left": [
         //"custom/rofi",
-        "hyprland/workspaces",
+        "custom/fuzzel",
+        //"hyprland/workspaces",
+        "niri/workspaces",
         //"hyprland/submap",
-        "temperature",
         "custom/weather",
+        "temperature"
         //"idle_inhibitor",
         //"mpd"
-        "custom/media"
+        //"custom/media"
     ],
     "modules-center": [
         //"hyprland/window"
@@ -63,8 +65,15 @@
         "format": "",
         "tooltip": false,
         "on-click-right": "nwg-drawer",
-        "on-click": "wofi --show run",
-        "on-click-middle": "pkill -9 wofi"
+        "on-click": "rofi -show run",
+        "on-click-middle": "pkill -9 rofi"
+    },
+    "custom/fuzzel": {
+        "format": "",
+        "tooltip": false,
+        "on-click-right": "nwg-drawer",
+        "on-click": "fuzzel",
+        "on-click-middle": "pkill -9 fuzzel"
     },
     "custom/screenshot_t":{
         "format":"",
@@ -310,6 +319,25 @@
         "on-scroll-down": "hyprctl dispatch workspace e-1 1>/dev/null",
         "sort-by-number": true,
         "active-only": false,
+    },
+
+    "niri/workspaces": {
+        "all-outputs": true,
+        "format": "{icon}",
+        "format-icons": {
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六",
+            "7": "七",
+            "8": "八",
+            "9": "九",
+            "10": "十"
+        },
+        "sort-by-number": true,
+        "active-only": false
     },
 
     "hyprland/window": {
