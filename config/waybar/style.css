@@ -137,6 +137,12 @@ window#waybar.hidden {
   padding: 0 0px;
 }
 
+#custom-weather {
+    color: #00ccff;
+    font-weight: bold;
+    padding: 0 10px;
+}
+
 #custom-weather.severe {
   color: #eb937d;
 }
@@ -265,11 +271,16 @@ label:focus {
 }
 
 #temperature {
-  background-color: #f0932b;
+    color: #00ffbb;
 }
 
 #temperature.critical {
-  background-color: #eb4d4b;
+    color: #ff0000;
+    animation: temp-blink 1s infinite;
+}
+
+@keyframes temp-blink {
+    50% { color: #ff6600; }
 }
 
 #tray {

@@ -19,7 +19,8 @@
         //"custom/rofi",
         "hyprland/workspaces",
         //"hyprland/submap",
-        //"temperature",
+        "temperature",
+        "custom/weather",
         //"idle_inhibitor",
         //"mpd"
         "custom/media"
@@ -89,15 +90,15 @@
 
     "temperature": {
         // "thermal-zone": 1,
-        "interval": 4,
+        "interval": 2,
         //"hwmon-path": "/sys/class/hwmon/hwmon3/temp1_input",
         "critical-threshold": 80,
         // "format-critical": " {temperatureC}°C",
         "format-critical": "  {temperatureC}°C",
-        "format": "{icon}  {temperatureC}°C",
+        "format": "{icon}  {temperatureC}°",
         "format-icons": ["", "", ""],
-        "max-length": 7,
-        "min-length": 7,
+        "max-length": 6,
+        "min-length": 6,
         "on-click": "xsensors"
     },
 
@@ -212,8 +213,8 @@
     },
 
     "clock#date": {
-        "format": "❤️  {:%H:%M   %e %b}", // Icon: calendar-alt
-        //"format": "{:%I:%M %p  %A %b %d}",
+        //"format": "❤️  {:%A :%H:%M   %e %b}", // Icon: calendar-alt
+        "format": "{:%I:%M %p  %A %b %d}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "today-format": "<b>{}</b>"
     },
