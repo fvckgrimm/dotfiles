@@ -327,6 +327,7 @@ binds {
     //Mod+Return { spawn "kitty"; }
     Mod+Return { spawn "ghostty"; }
     Mod+Space { spawn "fuzzel"; }
+    //Mod+Space {spawn "rofi" "-show" "drun";}
     //Super+Alt+L { spawn "swaylock"; }
     Super+Alt+L {spawn "wlogout"; }
     Mod+T {spawn "Thunar"; }
