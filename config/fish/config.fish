@@ -17,6 +17,7 @@ set -Ux fifc_editor nvim
 # Bind fzf completions to ctrl-x
 #set -U fifc_keybinding \cx
 
+set -x BEMOJI_PICKER_CMD "fuzzel -d"
 set -gx EDITOR nvim
 set -gx VOLTA_HOME $HOME/.volta
 set -gx GOPATH $HOME/go
@@ -97,6 +98,12 @@ function stream_video
     end
     
     ssh $host "ffmpeg -i '$video_path' -c:v libx264 -c:a aac -b:v 1M -b:a 150k -f mpegts -" | mpv -
+end
+
+function fish_should_add_to_history
+    string match -qr "^\s" -- $argv; and return 1
+    string match -qr "^clear\$" -- $argv; and return 1
+    return 0
 end
 
 # Completion styling
