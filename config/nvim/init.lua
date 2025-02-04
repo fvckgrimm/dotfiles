@@ -113,6 +113,15 @@ vim.filetype.add({
 	},
 })
 
+require("lazy").setup({
+	{
+		"supermaven-inc/supermaven-nvim",
+		config = function()
+			require("supermaven-nvim").setup({})
+		end,
+	},
+}, {})
+
 --require('sg').setup {
 -- Pass your own custom attach function
 --    If you do not pass your own attach function, then the following maps are provide:
