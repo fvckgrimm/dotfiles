@@ -41,6 +41,7 @@
         "battery",
         //"pulseaudio",
         "wireplumber",
+        "network",
         "custom/screenshot_t",
         "custom/power",
         "tray"
