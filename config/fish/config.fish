@@ -19,6 +19,7 @@ set -Ux fifc_editor nvim
 
 set -x BEMOJI_PICKER_CMD "fuzzel -d"
 set -gx EDITOR nvim
+set -gx SYSTEMD_EDITOR nvim
 set -gx VOLTA_HOME $HOME/.volta
 set -gx GOPATH $HOME/go
 set -gx PATH $VOLTA_HOME/bin $HOME/.cargo/bin /usr/local/opt/flameshot/bin $GOPATH/bin /usr/local/Cellar/john-jumbo/1.9.0_1/share/john $HOME/bins $PATH
@@ -116,3 +117,6 @@ set -U fish_color_redirection magenta
 
 set -U fish_history_ignore_space yes
 set -U fish_history_ignore_dups yes
+
+# Added by LM Studio CLI (lms)
+set -gx PATH $PATH /home/grimm/.lmstudio/bin

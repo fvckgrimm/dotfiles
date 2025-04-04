@@ -198,3 +198,6 @@ source /home/grimm/.config/broot/launcher/bash/br
 [[ -f /home/grimm/.dart-cli-completion/zsh-config.zsh ]] && . /home/grimm/.dart-cli-completion/zsh-config.zsh || true
 ## [/Completion]
 
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/grimm/.lmstudio/bin"
