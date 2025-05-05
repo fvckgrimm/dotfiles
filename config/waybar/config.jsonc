@@ -12,8 +12,8 @@
     "modules-left": [
         //"custom/rofi",
         "custom/fuzzel",
-        "hyprland/workspaces",
-        //"niri/workspaces",
+        //"hyprland/workspaces",
+        "niri/workspaces",
         //"hyprland/submap",
         "custom/weather",
         "temperature"
@@ -23,6 +23,7 @@
     ],
     "modules-center": [
         //"hyprland/window"
+        //"niri/window",
         "clock#date"
         //"custom/weather"
         //"custom/gammastep"
@@ -128,7 +129,8 @@
     },
     "network": {
         "format-wifi": " {essid} ({signalStrength}%)",
-        "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+        "format-ethernet": "󰈀  {ifname}:  {bandwidthUpBits}  {bandwidthDownBits}",
+        //"format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
         "format-linked": "{ifname} (No IP) ",
         "format": "",
         "format-disconnected": "",
@@ -222,7 +224,7 @@
         "exec": {
             "pre": "if unit_status=\"$(systemctl --user is-active gammastep)\"; then\nstatus=\"$unit_status ($(journalctl --user -u gammastep.service -g 'Period: ' | tail -1 | cut -d ':' -f6 | xargs))\"\nelse\nstatus=\"$unit_status\"\nfi",
             "alt": "${status:-inactive}",
-            "tooltip": "Gammastep is $status",
+            "tooltip": "Gammastep is $status"
         },
         "format": "{icon}",
         "format-icons": {
@@ -236,9 +238,9 @@
             "active (Day)": " ",
             "active (Daytime)": " ",
             "active (Transition (Day)": " ",
-            "active (Transition (Daytime)": " ",
+            "active (Transition (Daytime)": " "
         },
-        "on-click": "systemctl --user is-active gammastep && systemctl --user stop gammastep || systemctl --user start gammastep",
+        "on-click": "systemctl --user is-active gammastep && systemctl --user stop gammastep || systemctl --user start gammastep"
     },
     "cpu": {
         "interval": 1,
@@ -294,12 +296,12 @@
             "7": "七",
             "8": "八",
             "9": "九",
-            "10": "十",
+            "10": "十"
         },
         "on-scroll-up": "hyprctl dispatch workspace e+1 1>/dev/null",
         "on-scroll-down": "hyprctl dispatch workspace e-1 1>/dev/null",
         "sort-by-number": true,
-        "active-only": false,
+        "active-only": false
     },
     "niri/workspaces": {
         "all-outputs": true,
@@ -321,6 +323,10 @@
     },
     "hyprland/window": {
         "max-length": 100,
+        "separate-outputs": true
+    },
+    "niri/window": {
+        "icon": false,
         "separate-outputs": true
     },
     "pulseaudio": {
@@ -373,7 +379,7 @@
                 " ",
                 " "
             ]
-        },
+        }
     },
     "tray": {
         "icon-size": 15,
