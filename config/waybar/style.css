@@ -12,23 +12,24 @@
 
 /* Reset all styles */
 * {
-    border: none;
-    border-radius: 3px;
-    min-height: 0;
-    margin: 0.2em 0.3em; /*0.2em 0.3em*/
+  border: none;
+  border-radius: 3px;
+  min-height: 0;
+  margin: 0.2em 0.3em;
+  /*0.2em 0.3em*/
 }
 
 /* The whole bar */
 #waybar {
-    /*background: @bg;*/
-    background-color: rgba(30, 30, 30, 0.9);
-    /*color: @light;*/
-    color: #ffffff;
-    /*transition-property: background-color;
+  /*background: @bg;*/
+  background-color: rgba(30, 30, 30, 0.9);
+  /*color: @light;*/
+  color: #ffffff;
+  /*transition-property: background-color;
     transition-duration: 0.5s;
     border-top: 8px transparent;
     border-radius: 0px;*/
-    margin: 0px 0px;
+  margin: 0px 0px;
 }
 
 window#waybar.hidden {
@@ -50,9 +51,11 @@ window#waybar.hidden {
 #workspaces button.focused {
   background-color: transparent;
 }
+
 #workspace button.hover {
   background-color: transparent;
 }
+
 #workspaces button.active {
   color: #fff;
 }
@@ -139,9 +142,9 @@ window#waybar.hidden {
 }
 
 #custom-weather {
-    color: #c8d2e0;
-    font-weight: bold;
-    padding: 0 10px;
+  color: #c8d2e0;
+  font-weight: bold;
+  padding: 0 10px;
 }
 
 #custom-weather.severe {
@@ -176,12 +179,12 @@ window#waybar.hidden {
 }
 
 /* If workspaces is the leftmost module, omit left margin */
-.modules-left > widget:first-child > #workspaces {
+.modules-left>widget:first-child>#workspaces {
   margin-left: 0;
 }
 
 /* If workspaces is the rightmost module, omit right margin */
-.modules-right > widget:last-child > #workspaces {
+.modules-right>widget:last-child>#workspaces {
   margin-right: 0;
 }
 
@@ -271,35 +274,37 @@ label:focus {
   background-color: #ffa000;
 }
 
-#temperature, 
+#temperature,
 #custom-weather {
-    background-color: transparent;
-    padding: 0 8px;
-    margin: 0;
+  background-color: transparent;
+  padding: 0 8px;
+  margin: 0;
 }
 
 #temperature {
-    color: #c8d2e0;
+  color: #c8d2e0;
 }
 
 #temperature.critical {
-    color: #ff0000;
-    animation: temp-blink 1s infinite;
+  color: #ff0000;
+  animation: temp-blink 1s infinite;
 }
 
 @keyframes temp-blink {
-    50% { color: #ff6600; }
+  50% {
+    color: #ff6600;
+  }
 }
 
 #tray {
   background-color: transparent;
 }
 
-#tray > .passive {
+#tray>.passive {
   -gtk-icon-effect: dim;
 }
 
-#tray > .needs-attention {
+#tray>.needs-attention {
   -gtk-icon-effect: highlight;
   background-color: #eb4d4b;
 }
@@ -329,10 +334,10 @@ label:focus {
   min-width: 16px;
 }
 
-#keyboard-state > label {
+#keyboard-state>label {
   padding: 0 0px;
 }
 
-#keyboard-state > label.locked {
+#keyboard-state>label.locked {
   background: rgba(0, 0, 0, 0.2);
 }
