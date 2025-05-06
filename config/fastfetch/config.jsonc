@@ -35,7 +35,7 @@
         },
         {
             "type": "cpu",
-            "key": "│ ├",
+            "key": "│ ├󰍛",
             "keyColor": "magenta"
         },
         {
@@ -50,7 +50,7 @@
         },
         {
             "type": "disk",
-            "key": "└ └",
+            "key": "└ └",
             "keyColor": "magenta"
         },
         {
@@ -68,12 +68,12 @@
         },
         {
             "type": "kernel",
-            "key": "│ ├",
+            "key": "│ ├",
             "keyColor": "yellow"
         },
         {
             "type": "bios",
-            "key": "│ ├",
+            "key": "│ ├",
             "keyColor": "yellow"
         },
         {
@@ -83,7 +83,7 @@
         },
         {
             "type": "shell",
-            "key": "└ └",
+            "key": "└ └",
             "keyColor": "yellow"
         },
         {
@@ -93,12 +93,12 @@
         },
         {
             "type": "lm",
-            "key": "│ ├",
+            "key": "│ ├",
             "keyColor": "cyan"
         },
         {
             "type": "wm",
-            "key": "│ ├",
+            "key": "│ ├",
             "keyColor": "cyan"
         },
         {
@@ -108,7 +108,7 @@
         },
         {
             "type": "terminal",
-            "key": "└ └",
+            "key": "└ └",
             "keyColor": "cyan"
         },
         {
