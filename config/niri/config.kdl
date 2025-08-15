@@ -340,6 +340,7 @@ binds {
     Mod+Space { spawn "fuzzel"; }
     //Mod+Space {spawn "rofi" "-show" "drun";}
     //Super+Alt+L { spawn "swaylock"; }
+    //Super+Alt+L { spawn "swaylock-fancy" "-e" "-K" "-p" "10" "-f" "Hack-Regular"; }
     Super+Alt+L {spawn "wlogout"; }
     Mod+T {spawn "Thunar"; }
     //Mod+Period {spawn "rofi" "-show" "emoji" "-emoji-format" "{emoji}" "-modi" "emoji:rofimoji" ;}
@@ -363,8 +364,10 @@ binds {
     XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
 
     // Brightness
-    XF86MonBrightnessUp     allow-when-locked=true { spawn "light" "-A" "5";}
-    XF86MonBrightnessDown   allow-when-locked=true { spawn "light" "-U" "5";}
+    //XF86MonBrightnessUp     allow-when-locked=true { spawn "light" "-A" "5";}
+    //XF86MonBrightnessDown   allow-when-locked=true { spawn "light" "-U" "5";}
+    XF86MonBrightnessUp     allow-when-locked=true { spawn "brightnessctl" "s" "+5%"; }
+    XF86MonBrightnessDown   allow-when-locked=true { spawn "brightnessctl" "s" "5%-"; }
     XF86KbdBrightnessUp     allow-when-locked=true { spawn "light" "-s" "sysfs/leds/spi::kbd_backlight" "-A" "10"; }
     XF86KbdBrightnessDown   allow-when-locked=true { spawn "light" "-s" "sysfs/leds/spi::kbd_backlight" "-U" "10"; }
 
