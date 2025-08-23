@@ -120,3 +120,5 @@ set -U fish_history_ignore_dups yes
 
 # Added by LM Studio CLI (lms)
 set -gx PATH $PATH /home/grimm/.lmstudio/bin
+
+fish_add_path -a /home/grimm/.foundry/bin
