@@ -63,10 +63,10 @@ environment {
     DISPLAY ":0"
 }
 
-workspace "browser"
-workspace "chat"
-workspace "editor"
-workspace "monitor"
+//workspace "browser"
+//workspace "chat"
+//workspace "editor"
+//workspace "monitor"
 
 // You can configure outputs by their name, which you can find
 // by running `niri msg outputs` while inside a niri instance.
