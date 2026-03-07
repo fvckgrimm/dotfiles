@@ -47,7 +47,7 @@ Item {
     StatChip {
         id: chip
         anchors.fill: parent
-        icon: ""
+        icon: "\u{f035b}"
         value: root.usedGb.toFixed(1) + "GB"
         iconColor: "#ffcc00"
         valueColor: "#ffcc00"

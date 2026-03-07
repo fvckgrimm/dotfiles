@@ -64,7 +64,7 @@ Item {
 
         StatChip {
             id: chip
-            icon: ""
+            icon: "\u{f4bc}"
             value: root.usage + "%"
             iconColor: "#ff656a"
             valueColor: "#ff656a"

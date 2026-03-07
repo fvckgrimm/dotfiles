@@ -3,216 +3,82 @@ import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
-// Floating notification popup — appears top-right, auto-dismisses after timeout
-// Anchored to the bar PanelWindow, positioned top-right
 PopupWindow {
     id: root
 
-    
-    required property var barWindow   // the PanelWindow from Bar.qml
+    required property var barWindow
 
-    // Queue of notifications waiting to be shown
-    property var queue: []
-    property var current: null
-    property bool showing: false
+    property var stack: []
+    readonly property int maxStack: 4
+    readonly property int cardHeight: 90
+    readonly property int cardSpacing: 8
+    readonly property int cardWidth: 360
 
-    implicitWidth: 360
-    implicitHeight: notifContent.implicitHeight + 24
+    // NEVER let height go to 0 — that sends an invalid size to the compositor
+    // and crashes the Wayland connection. Always keep at least 1px.
+    implicitWidth: cardWidth
+    implicitHeight: Math.max(1, stack.length * (cardHeight + cardSpacing))
     color: "transparent"
 
-    // Anchor to the bar, appear just below it on the right side
+    // Only show when there are cards — but delay hiding until after slide-out
+    // animations finish so the window isn't destroyed mid-animation
+    visible: stack.length > 0 || hideTimer.running
+
+    Timer {
+        id: hideTimer
+        interval: 300   // matches slideOut duration in NotifCard
+        running: false
+    }
+
     anchor.window: root.barWindow
-    anchor.rect.x: root.barWindow.width - implicitWidth - 12
+    anchor.rect.x: root.barWindow.width - cardWidth - 12
     anchor.rect.y: root.barWindow.implicitHeight + 4
     anchor.rect.width: 1
     anchor.rect.height: 1
 
-    visible: showing
-
-    // Auto-dismiss timer
-    Timer {
-        id: dismissTimer
-        interval: 5000
-        onTriggered: root.dismiss()
-    }
-
-    // Urgency-based timeout: critical stays longer
-    function timeoutForUrgency(urgency) {
-        // urgency: 0=low, 1=normal, 2=critical
-        if (urgency === 2) return 10000
-        if (urgency === 0) return 3000
-        return 5000
-    }
-
-    function show(notif) {
-        root.queue.push(notif)
-        if (!root.showing) showNext()
-    }
-
-    function showNext() {
-        if (root.queue.length === 0) { root.showing = false; return }
-        root.current = root.queue.shift()
-        root.showing = true
-        dismissTimer.interval = timeoutForUrgency(root.current.urgency ?? 1)
-        dismissTimer.restart()
-        slideIn.restart()
-    }
-
-    function dismiss() {
-        dismissTimer.stop()
-        slideOut.start()
-    }
-
-    // Connect to service
     Connections {
         target: NotificationService
-        function onNewNotification(notif) { root.show(notif) }
+        function onNewNotification(notif) { root.push(notif) }
     }
 
-    // ── Slide animations ────────────────────────────────────────────────────
-    NumberAnimation {
-        id: slideIn
-        target: popup
-        property: "x"
-        from: root.implicitWidth + 20
-        to: 0
-        duration: 250
-        easing.type: Easing.OutCubic
+    function push(notif) {
+        var n = Object.assign({}, notif, { _uid: Date.now() + Math.random() })
+        var s = root.stack.slice()
+        s.unshift(n)
+        if (s.length > maxStack) s = s.slice(0, maxStack)
+        root.stack = s
     }
 
-    SequentialAnimation {
-        id: slideOut
-        NumberAnimation {
-            target: popup
-            property: "x"
-            to: root.implicitWidth + 20
-            duration: 200
-            easing.type: Easing.InCubic
-        }
-        ScriptAction { script: root.showNext() }
+    function dismiss(uid) {
+        root.stack = root.stack.filter(n => n._uid !== uid)
+        // If stack is now empty, let the hide timer run so the window
+        // stays alive long enough for the slide-out animation to finish
+        if (root.stack.length === 0) hideTimer.restart()
     }
 
-    // ── Popup card ──────────────────────────────────────────────────────────
-    Item {
-        id: popup
-        anchors.fill: parent
-        clip: true
+    Repeater {
+        model: root.stack
 
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 4
-            radius: 6
-            color: "#f00d1117"
-            border.color: {
-                var u = root.current?.urgency ?? 1
-                if (u === 2) return "#80ff0000"
-                if (u === 0) return "#337984a4"
-                return "#335bcefa"
-            }
-            border.width: 1
+        delegate: NotifCard {
+            required property var modelData
+            required property int index
 
-            // Left urgency stripe
-            Rectangle {
-                anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 1 }
-                width: 3
-                radius: 3
-                color: {
-                    var u = root.current?.urgency ?? 1
-                    if (u === 2) return "#ff0000"
-                    if (u === 0) return "#7984a4"
-                    return "#0df0ff"
-                }
-            }
+            notif: modelData
+            cardWidth: root.cardWidth
+            cardHeight: root.cardHeight
+            y: index * (root.cardHeight + root.cardSpacing)
+            scale: 1.0 - (index * 0.02)
+            opacity: 1.0 - (index * 0.15)
 
-            ColumnLayout {
-                id: notifContent
-                anchors { fill: parent; margins: 12; leftMargin: 18 }
-                spacing: 4
+            Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 150 } }
 
-                RowLayout {
-                    spacing: 8
-                    Layout.fillWidth: true
+            onDismissed: root.dismiss(modelData._uid)
 
-                    Text {
-                        text: root.current?.appName ?? ""
-                        color: "#7984a4"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pointSize: 7
-                        font.bold: true
-                        Layout.fillWidth: true
-                    }
-
-                    Text {
-                        text: root.current?.time ?? ""
-                        color: "#555e7a"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pointSize: 7
-                    }
-
-                    // Close button
-                    Text {
-                        text: "✕"
-                        color: "#ff416c"
-                        font.pointSize: 8
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: root.dismiss()
-                        }
-                    }
-                }
-
-                Text {
-                    text: root.current?.summary ?? ""
-                    color: "#d8e0f0"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pointSize: 9
-                    font.bold: true
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    visible: text !== ""
-                }
-
-                Text {
-                    text: root.current?.body ?? ""
-                    color: "#9aa5c4"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pointSize: 8
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    textFormat: Text.PlainText
-                    visible: text !== ""
-                    maximumLineCount: 3
-                    elide: Text.ElideRight
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: root.dismiss()
-            }
-        }
-
-        // Progress bar showing remaining time
-        Rectangle {
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 5 }
-            height: 2
-            radius: 1
-            color: "#1a0df0ff"
-
-            Rectangle {
-                id: progressBar
-                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                radius: 1
-                color: "#550df0ff"
-                width: parent.width
-
-                NumberAnimation on width {
-                    id: progressAnim
-                    running: root.showing
-                    from: progressBar.parent.width
-                    to: 0
-                    duration: dismissTimer.interval
-                }
+            Timer {
+                interval: modelData.urgency === 2 ? 10000 : (modelData.urgency === 0 ? 3000 : 5000)
+                running: true
+                onTriggered: root.dismiss(modelData._uid)
             }
         }
     }

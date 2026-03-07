@@ -74,7 +74,7 @@ PopupWindow {
                 Text {
                     text: "󰒓  Control Center"
                     color: "#0df0ff"
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Theme.fontFamily
                     font.pointSize: 9
                     font.bold: true
                     Layout.fillWidth: true
@@ -98,22 +98,22 @@ PopupWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: root.muted ? " " : (root.volume < 33 ? " " : (root.volume < 66 ? " " : " "))
+                        text: root.muted ? "\u{f0581} " : (root.volume < 33 ? "\u{f057f} " : (root.volume < 66 ? "\u{f0580} " : "\u{f057e} "))
                         color: "#fab387"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 10
                     }
                     Text {
                         text: "Volume"
                         color: "#c8d2e0"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 8
                         Layout.fillWidth: true
                     }
                     Text {
                         text: root.muted ? "muted" : (root.volume + "%")
                         color: "#fab387"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 8
                     }
                     // Mute toggle
@@ -123,9 +123,9 @@ PopupWindow {
                         border.color: "#55fab387"; border.width: 1
                         Text {
                             anchors.centerIn: parent
-                            text: root.muted ? "" : ""
+                            text: root.muted ? "\u{f0581}" : "\u{f057e}"
                             color: "#fab387"
-                            font.family: "JetBrainsMono Nerd Font"
+                            font.family: Theme.fontFamily
                             font.pointSize: 9
                         }
                         MouseArea {
@@ -161,20 +161,20 @@ PopupWindow {
                     Text {
                         text: "󰃞"
                         color: "#ffcc00"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 10
                     }
                     Text {
                         text: "Brightness"
                         color: "#c8d2e0"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 8
                         Layout.fillWidth: true
                     }
                     Text {
                         text: root.brightness + "%"
                         color: "#ffcc00"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 8
                     }
                 }
@@ -200,9 +200,9 @@ PopupWindow {
 
                 Repeater {
                     model: [
-                        { icon: "", label: "WiFi",      cmd: ["nm-connection-editor"] },
+                        { icon: "\u{f05a9}", label: "WiFi",      cmd: ["nm-connection-editor"] },
                         { icon: "󰂯", label: "Bluetooth", cmd: ["blueman-manager"] },
-                        { icon: "", label: "Night",     cmd: ["bash", "-c", "gammastep -O 4500 &"] },
+                        { icon: "\u{f0594}", label: "Night",     cmd: ["bash", "-c", "gammastep -O 4500 &"] },
                         { icon: "󰌾", label: "Lock",      cmd: ["hyprlock"] },
                     ]
                     delegate: Rectangle {
@@ -221,14 +221,14 @@ PopupWindow {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: modelData.icon
                                 color: "#c8d2e0"
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Theme.fontFamily
                                 font.pointSize: 12
                             }
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: modelData.label
                                 color: "#7984a4"
-                                font.family: "JetBrainsMono Nerd Font"
+                                font.family: Theme.fontFamily
                                 font.pointSize: 6
                             }
                         }

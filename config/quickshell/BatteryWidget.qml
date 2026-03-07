@@ -16,13 +16,13 @@ Item {
     readonly property bool isWarning:  capacity <= 30 && !isCharging
 
     readonly property string batIcon: {
-        if (isCharging) return ""
-        if (isFull)     return ""
-        if (capacity > 80) return ""
-        if (capacity > 60) return ""
-        if (capacity > 40) return ""
-        if (capacity > 20) return ""
-        return ""
+        if (isCharging) return "\u{f0084}"
+        if (isFull)     return "\u{f0079}"
+        if (capacity > 80) return "\u{f0082}"
+        if (capacity > 60) return "\u{f0080}"
+        if (capacity > 40) return "\u{f007e}"
+        if (capacity > 20) return "\u{f007c}"
+        return "\u{f007a}"
     }
 
     readonly property string batColor: {

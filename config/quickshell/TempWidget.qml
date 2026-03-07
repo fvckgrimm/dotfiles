@@ -10,7 +10,7 @@ Item {
     property int tempC: 0
     readonly property bool isCritical: tempC >= 80
 
-    readonly property string tempIcon: tempC < 50 ? "" : (tempC < 70 ? "" : "")
+    readonly property string tempIcon: tempC < 50 ? "\u{f0f54}" : (tempC < 70 ? "\u{f0f55}" : "\u{f0f58}")
 
     Process {
         id: tempProc
@@ -43,7 +43,7 @@ Item {
         accentColor: root.isCritical ? "#80ff0000" : "#50c8d2e0"
         bgColor: "#661e1e28"
         tooltipText: "CPU Temp: " + root.tempC + "°C"
-        onClicked: Quickshell.exec(["xsensors"])
+        onClicked: Quickshell.execDetached(["xsensors"])
 
         // Pulsing animation when critical
         SequentialAnimation on opacity {

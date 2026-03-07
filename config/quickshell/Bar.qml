@@ -73,11 +73,11 @@ PanelWindow {
                 spacing: 2
 
                 BarButton {
-                    text: ""
+                    text: "\u{f0349}"   // nf-md-magnify
                     textColor: "#0df0ff"
                     borderColor: "#550df0ff"
-                    onClicked: Quickshell.execDetached(["fuzzel"])
-                    onRightClicked: Quickshell.execDetached(["nwg-drawer"])
+                    onClicked: Quickshell.execDetached(Theme.launcherCmd)
+                    onRightClicked: Quickshell.execDetached(Theme.drawerCmd)
                     tooltipText: "App Launcher"
                 }
                 WorkspacesWidget {}
@@ -128,7 +128,7 @@ PanelWindow {
 
                 // Screenshot
                 BarButton {
-                    text: ""
+                    text: "\udb80\udd00"   // nf-md-camera
                     textColor: "#ff416c"
                     borderColor: "#55ff416c"
                     onClicked: Quickshell.execDetached(["bash", "-c", "$HOME/.config/hypr/scripts/screenshot_full"])
@@ -138,7 +138,7 @@ PanelWindow {
 
                 // Power
                 BarButton {
-                    text: ""
+                    text: "\u{f0425}"   // nf-md-power
                     textColor: "#ff416c"
                     borderColor: "transparent"
                     onClicked: Quickshell.execDetached(["wlogout"])

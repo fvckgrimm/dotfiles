@@ -41,7 +41,7 @@ Item {
     StatChip {
         id: chip
         anchors.fill: parent
-        icon: ""
+        icon: "\u{f0a0}"
         value: root.avail
         iconColor: root.warnClass === "critical" ? "#ff0000"
                  : root.warnClass === "warning"  ? "#ffaa00" : "#c8d2e0"
