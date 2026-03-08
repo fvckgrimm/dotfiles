@@ -57,10 +57,10 @@ Scope {
     }
 
     function clearAll() {
-        // Dismiss all tracked notifications from the server
-        for (var i = 0; i < root.notifications.length; i++) {
-            var n = root.notifications[i]
-            if (n.raw) n.raw.dismiss()
+        // Try to dismiss each from server, but never let a failure block the clear
+        var copy = root.notifications.slice()
+        for (var i = 0; i < copy.length; i++) {
+            try { if (copy[i].raw) copy[i].raw.dismiss() } catch(e) {}
         }
         root.notifications = []
         root.unreadCount = 0

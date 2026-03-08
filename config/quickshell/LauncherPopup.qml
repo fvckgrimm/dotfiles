@@ -11,6 +11,7 @@ PanelWindow {
     id: root
 
     required property var barWindow
+    visible: false
 
     // Center on screen
     WlrLayershell.layer: WlrLayer.Overlay
@@ -126,18 +127,23 @@ PanelWindow {
         LauncherService.open = false
     }
 
-    // Self-managing — responds to LauncherService singleton
+    // Only respond to LauncherService after component is fully initialized
+    property bool _ready: false
+    Component.onCompleted: Qt.callLater(() => { _ready = true })
+
     Connections {
         target: LauncherService
         function onOpenChanged() {
+            if (!root._ready) return
             if (LauncherService.open) root.open()
             else if (root.visible) { root.visible = false; root.query = "" }
         }
         function onModeChanged() {
+            if (!root._ready) return
             if (root.visible) root.mode = LauncherService.mode
         }
     }
-    onVisibleChanged: if (!visible) LauncherService.open = false
+    onVisibleChanged: if (_ready && !visible) LauncherService.open = false
 
     // ── Processes ────────────────────────────────────────────────────────────
 
