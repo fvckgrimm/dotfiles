@@ -1,0 +1,65 @@
+#!/bin/bash
+# wallpaper-add — add image paths to quickshell wallpaper list
+# Usage: wallpaper-add image.png         (relative path)
+#        wallpaper-add ~/Pictures/wall.jpg (full path)
+#        wallpaper-add .                   (current directory)
+
+WALLFILE="$HOME/.config/quickshell/wallpapers.txt"
+mkdir -p "$(dirname "$WALLFILE")"
+touch "$WALLFILE"
+
+if [ -z "$1" ]; then
+    echo "Usage: wallpaper-add <path or folder>"
+    echo "Current list: $WALLFILE"
+    cat "$WALLFILE"
+    exit 0
+fi
+
+# Resolve the input to a full absolute path immediately
+# This handles relative paths (image.png -> /home/user/dir/image.png)
+TARGET=$(realpath "$1" 2>/dev/null)
+
+if [ ! -e "$TARGET" ]; then
+    echo "Error: Path does not exist: $1"
+    exit 1
+fi
+
+add_path() {
+    local p="$1"
+    
+    # Check it's an image (by extension)
+    case "${p,,}" in
+        *.jpg|*.jpeg|*.png|*.gif|*.webp|*.bmp|*.tiff|*.tga)
+            ;;
+        *)
+            echo "Skipping (not a recognised image): $p"
+            return 1
+            ;;
+    esac
+
+    # Check for duplicates in the file
+    if grep -qxF "$p" "$WALLFILE"; then
+        echo "Already in list: $p"
+        return 0
+    fi
+
+    echo "$p" >> "$WALLFILE"
+    echo "Added: $p"
+}
+
+if [ -d "$TARGET" ]; then
+    # Add all images in folder
+    echo "Scanning folder: $TARGET"
+    count=0
+    # We find files and use realpath on each to ensure they are full paths
+    while IFS= read -r -d '' f; do
+        abs_f=$(realpath "$f")
+        add_path "$abs_f" && ((count++))
+    done < <(find "$TARGET" -maxdepth 1 -type f \( \
+        -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \
+        -o -iname "*.gif" -o -iname "*.webp" \) -print0 | sort -z)
+    echo "Done. Added $count wallpapers from $TARGET"
+else
+    # It's a single file, TARGET is already the absolute path from realpath above
+    add_path "$TARGET"
+fi
