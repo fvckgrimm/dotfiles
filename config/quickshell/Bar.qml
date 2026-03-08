@@ -50,6 +50,13 @@ PanelWindow {
         anchor.rect.height: 1
     }
 
+    // Wallpaper picker — full-width filmstrip slides up from bottom
+    WallpaperPicker {
+        id: wallpaperPicker
+        barWindow: bar
+        visible: false
+    }
+
     Rectangle {
         anchors.fill: parent
         color: "#d90d1117"
@@ -79,6 +86,17 @@ PanelWindow {
                     onClicked: Quickshell.execDetached(Theme.launcherCmd)
                     onRightClicked: Quickshell.execDetached(Theme.drawerCmd)
                     tooltipText: "App Launcher"
+                }
+
+                BarButton {
+                    text: "\u{f021d}"   // nf-md-image
+                    textColor: Theme.purple
+                    borderColor: wallpaperPicker.visible ? "#55c792ea" : "transparent"
+                    tooltipText: "Wallpaper Picker"
+                    onClicked: {
+                        if (wallpaperPicker.visible) wallpaperPicker.close(false)
+                        else wallpaperPicker.open()
+                    }
                 }
                 WorkspacesWidget {}
                 WeatherWidget {}
