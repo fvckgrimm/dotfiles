@@ -54,7 +54,6 @@ PanelWindow {
         visible: false
     }
 
-    // Connections at Bar level — singleton signals reliably reach here
     Connections {
         target: WallpaperService
         function onOpenChanged() {
@@ -69,10 +68,6 @@ PanelWindow {
             if (!wallpaperPicker.visible) WallpaperService.open = false
         }
     }
-
-    // LauncherPopup is a PanelWindow itself — instantiated in shell.qml Variants
-    // The bar button just calls LauncherService.toggle() / showMode()
-    // (LauncherPopup is declared separately, not as a child of Bar)
 
     Rectangle {
         anchors.fill: parent
@@ -95,7 +90,6 @@ PanelWindow {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 6 }
                 spacing: 2
 
-                // App Launcher
                 BarButton {
                     text: "\u{f0349}"
                     textColor: "#0df0ff"
@@ -105,7 +99,6 @@ PanelWindow {
                     onRightClicked: Quickshell.execDetached(Theme.drawerCmd)
                 }
 
-                // Wallpaper Picker
                 BarButton {
                     text: "\u{f021d}"
                     textColor: Theme.purple
@@ -145,6 +138,20 @@ PanelWindow {
                     borderColor: "transparent"
                     tooltipText: "Control Center"
                     onClicked: controlCenter.visible = !controlCenter.visible
+                }
+
+                // Todo button — toggles TodoWidget (a top-level PanelWindow in shell.qml)
+                BarButton {
+                    readonly property int pending: TodoService.pendingToday
+                    text: pending > 0 ? ("󰄲 " + pending) : "󰄲"
+                    textColor: pending > 0 ? "#e8b86a" : "#7984a4"
+                    borderColor: TodoService.open
+                        ? "#44e8b86a"
+                        : (pending > 0 ? "#22e8b86a" : "transparent")
+                    tooltipText: pending > 0
+                        ? (pending + " task" + (pending > 1 ? "s" : "") + " remaining")
+                        : "Todo  (Super+T)"
+                    onClicked: TodoService.toggle()
                 }
 
                 BarButton {
