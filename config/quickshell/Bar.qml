@@ -28,7 +28,6 @@ PanelWindow {
         anchor.rect.height: 1
     }
 
-    // Calendar popup anchored below clock
     CalendarPopup {
         id: calPopup
         visible: false
@@ -39,7 +38,6 @@ PanelWindow {
         anchor.rect.height: 1
     }
 
-    // Control center popup anchored below bar right
     ControlCenter {
         id: controlCenter
         visible: false
@@ -50,12 +48,31 @@ PanelWindow {
         anchor.rect.height: 1
     }
 
-    // Wallpaper picker — full-width filmstrip slides up from bottom
     WallpaperPicker {
         id: wallpaperPicker
         barWindow: bar
         visible: false
     }
+
+    // Connections at Bar level — singleton signals reliably reach here
+    Connections {
+        target: WallpaperService
+        function onOpenChanged() {
+            if (WallpaperService.open) wallpaperPicker.open()
+            else wallpaperPicker.close(false)
+        }
+    }
+
+    Connections {
+        target: wallpaperPicker
+        function onVisibleChanged() {
+            if (!wallpaperPicker.visible) WallpaperService.open = false
+        }
+    }
+
+    // LauncherPopup is a PanelWindow itself — instantiated in shell.qml Variants
+    // The bar button just calls LauncherService.toggle() / showMode()
+    // (LauncherPopup is declared separately, not as a child of Bar)
 
     Rectangle {
         anchors.fill: parent
@@ -69,7 +86,6 @@ PanelWindow {
             color: "#330af0ff"
         }
 
-        // True 3-column layout: left/center/right all relative to bar width
         Item {
             anchors.fill: parent
 
@@ -79,31 +95,31 @@ PanelWindow {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 6 }
                 spacing: 2
 
+                // App Launcher
                 BarButton {
-                    text: "\u{f0349}"   // nf-md-magnify
+                    text: "\u{f0349}"
                     textColor: "#0df0ff"
-                    borderColor: "#550df0ff"
-                    onClicked: Quickshell.execDetached(Theme.launcherCmd)
+                    borderColor: LauncherService.open ? "#550df0ff" : "transparent"
+                    tooltipText: "App Launcher (Super+Space)"
+                    onClicked: LauncherService.toggle()
                     onRightClicked: Quickshell.execDetached(Theme.drawerCmd)
-                    tooltipText: "App Launcher"
                 }
 
+                // Wallpaper Picker
                 BarButton {
-                    text: "\u{f021d}"   // nf-md-image
+                    text: "\u{f021d}"
                     textColor: Theme.purple
-                    borderColor: wallpaperPicker.visible ? "#55c792ea" : "transparent"
-                    tooltipText: "Wallpaper Picker"
-                    onClicked: {
-                        if (wallpaperPicker.visible) wallpaperPicker.close(false)
-                        else wallpaperPicker.open()
-                    }
+                    borderColor: WallpaperService.open ? "#55c792ea" : "transparent"
+                    tooltipText: "Wallpaper Picker (Super+Shift+W)"
+                    onClicked: WallpaperService.toggle()
                 }
+
                 WorkspacesWidget {}
                 WeatherWidget {}
                 TempWidget {}
             }
 
-            // CENTER — truly centered regardless of left/right widths
+            // CENTER
             ClockWidget {
                 anchors.centerIn: parent
                 onClockClicked: calPopup.visible = !calPopup.visible
@@ -123,7 +139,6 @@ PanelWindow {
                 NetworkWidget {}
                 MediaWidget {}
 
-                // Control center button
                 BarButton {
                     text: "󰒓"
                     textColor: "#c8d2e0"
@@ -132,7 +147,6 @@ PanelWindow {
                     onClicked: controlCenter.visible = !controlCenter.visible
                 }
 
-                // Notification bell
                 BarButton {
                     readonly property int count: NotificationService.unreadCount ?? 0
                     text: count > 0 ? ("󰂚 " + count) : "󰂜"
@@ -144,9 +158,8 @@ PanelWindow {
                     onClicked: notifCenter.visible = !notifCenter.visible
                 }
 
-                // Screenshot
                 BarButton {
-                    text: "\udb80\udd00"   // nf-md-camera
+                    text: "\udb80\udd00"
                     textColor: "#ff416c"
                     borderColor: "#55ff416c"
                     onClicked: Quickshell.execDetached(["bash", "-c", "$HOME/.config/hypr/scripts/screenshot_full"])
@@ -154,9 +167,8 @@ PanelWindow {
                     tooltipText: "Screenshot"
                 }
 
-                // Power
                 BarButton {
-                    text: "\u{f0425}"   // nf-md-power
+                    text: "\u{f0425}"
                     textColor: "#ff416c"
                     borderColor: "transparent"
                     onClicked: Quickshell.execDetached(["wlogout"])

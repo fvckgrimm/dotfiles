@@ -40,7 +40,7 @@ PopupWindow {
                 Text {
                     text: "󰂚  Notifications"
                     color: "#0df0ff"
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Theme.fontFamily
                     font.pointSize: 9
                     font.bold: true
                     Layout.fillWidth: true
@@ -61,7 +61,7 @@ PopupWindow {
                         anchors.centerIn: parent
                         text: "Clear all"
                         color: "#ff416c"
-                        font.family: "JetBrainsMono Nerd Font"
+                        font.family: Theme.fontFamily
                         font.pointSize: 7
                     }
                     MouseArea {
@@ -101,7 +101,7 @@ PopupWindow {
                     anchors.centerIn: parent
                     text: "No notifications"
                     color: "#555e7a"
-                    font.family: "JetBrainsMono Nerd Font"
+                    font.family: Theme.fontFamily
                     font.pointSize: 8
                 }
             }
@@ -158,7 +158,7 @@ PopupWindow {
                                     Text {
                                         text: modelData.appName
                                         color: "#7984a4"
-                                        font.family: "JetBrainsMono Nerd Font"
+                                        font.family: Theme.fontFamily
                                         font.pointSize: 7
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
@@ -167,7 +167,7 @@ PopupWindow {
                                     Text {
                                         text: modelData.time
                                         color: "#444d62"
-                                        font.family: "JetBrainsMono Nerd Font"
+                                        font.family: Theme.fontFamily
                                         font.pointSize: 7
                                     }
 
@@ -185,7 +185,7 @@ PopupWindow {
                                 Text {
                                     text: modelData.summary
                                     color: "#c8d2e0"
-                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.family: Theme.fontFamily
                                     font.pointSize: 8
                                     font.bold: true
                                     Layout.fillWidth: true
@@ -196,7 +196,7 @@ PopupWindow {
                                 Text {
                                     text: modelData.body
                                     color: "#7984a4"
-                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.family: Theme.fontFamily
                                     font.pointSize: 7
                                     Layout.fillWidth: true
                                     wrapMode: Text.WordWrap
