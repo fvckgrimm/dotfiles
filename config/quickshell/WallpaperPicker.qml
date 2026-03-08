@@ -29,6 +29,7 @@ PopupWindow {
     // see keyCapture below.
 
     property bool  stripVisible: false
+    property bool _closing: false
     property var   wallpapers:   []
     property string prevWall:    ""
     property int   highlightIdx: -1
@@ -49,8 +50,14 @@ PopupWindow {
     }
 
     function close(confirm) {
+        if (_closing) return
+        _closing = true
+        console.log("close called: confirm=" + confirm + " prevWall=" + prevWall + " highlightIdx=" + highlightIdx + " wall=" + (wallpapers[highlightIdx] ?? "none"))
         if (!confirm && prevWall !== "") applyWall(prevWall)
-        else if (confirm && highlightIdx >= 0) selectedIdx = highlightIdx
+        else if (confirm && highlightIdx >= 0) {
+            selectedIdx = highlightIdx
+            applyWall(wallpapers[highlightIdx])
+        }
         stripVisible = false
         closeTimer.start()
     }
@@ -58,13 +65,17 @@ PopupWindow {
     Timer {
         id: closeTimer
         interval: 280
-        onTriggered: root.visible = false
+        onTriggered: {
+            root.visible = false
+            root._closing = false  // ← reset after fully closed
+        }
     }
 
     function applyWall(path) {
         if (!path || path === "") return
         Quickshell.execDetached([
             "swww", "img",
+            "-o", barWindow && barWindow.screen ? barWindow.screen.name : "DP-1",
             "--transition-type", "fade",
             "--transition-duration", "0.3",
             path
