@@ -9,9 +9,11 @@ PopupWindow {
     implicitHeight: calCol.implicitHeight + 24
     color: "transparent"
 
-    // Current displayed month/year
+    // Current displayed month/year (the page the user is looking at)
     property int displayYear: new Date().getFullYear()
-    property int displayMonth: new Date().getMonth()  // 0-11
+    property int displayMonth: new Date().getMonth() 
+
+    // The actual "Real World" date constants
     property int todayDay: new Date().getDate()
     property int todayMonth: new Date().getMonth()
     property int todayYear: new Date().getFullYear()
@@ -19,6 +21,33 @@ PopupWindow {
     readonly property var monthNames: ["January","February","March","April","May","June",
                                        "July","August","September","October","November","December"]
     readonly property var dayNames: ["Su","Mo","Tu","We","Th","Fr","Sa"]
+
+    // Function to synchronize variables with the system clock
+    function updateToday() {
+        const now = new Date();
+        root.todayDay = now.getDate();
+        root.todayMonth = now.getMonth();
+        root.todayYear = now.getFullYear();
+    }
+
+    // Update the date whenever the popup is opened
+    onVisibleChanged: {
+        if (visible) {
+            updateToday();
+            // Optional: Uncomment the lines below if you want the calendar 
+            // to automatically jump back to the current month when opened
+            // root.displayMonth = root.todayMonth;
+            // root.displayYear = root.todayYear;
+        }
+    }
+
+    // Timer to update the date automatically if the shell stays open past midnight
+    Timer {
+        interval: 60000 // Check every minute
+        running: true
+        repeat: true
+        onTriggered: root.updateToday()
+    }
 
     function daysInMonth(year, month) {
         return new Date(year, month + 1, 0).getDate()
@@ -57,7 +86,10 @@ PopupWindow {
                     color: "#0df0ff"
                     font.pointSize: 12
                     font.bold: true
-                    MouseArea { anchors.fill: parent; onClicked: root.prevMonth() }
+                    MouseArea { 
+                        anchors.fill: parent
+                        onClicked: root.prevMonth() 
+                    }
                 }
 
                 Text {
@@ -75,7 +107,10 @@ PopupWindow {
                     color: "#0df0ff"
                     font.pointSize: 12
                     font.bold: true
-                    MouseArea { anchors.fill: parent; onClicked: root.nextMonth() }
+                    MouseArea { 
+                        anchors.fill: parent
+                        onClicked: root.nextMonth() 
+                    }
                 }
             }
 
@@ -112,8 +147,11 @@ PopupWindow {
                 Repeater {
                     model: root.daysInMonth(root.displayYear, root.displayMonth)
                     delegate: Rectangle {
+                        id: dayRect
                         required property int index
                         readonly property int day: index + 1
+                        
+                        // This logic is now reactive because root.todayDay is updated by the Timer/Function
                         readonly property bool isToday: day === root.todayDay
                             && root.displayMonth === root.todayMonth
                             && root.displayYear === root.todayYear
