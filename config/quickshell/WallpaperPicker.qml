@@ -74,7 +74,7 @@ PopupWindow {
     function applyWall(path) {
         if (!path || path === "") return
         Quickshell.execDetached([
-            "swww", "img",
+            "awww", "img",
             "-o", barWindow && barWindow.screen ? barWindow.screen.name : "DP-1",
             "--transition-type", "fade",
             "--transition-duration", "0.3",
@@ -106,7 +106,7 @@ PopupWindow {
     Process {
         id: snapshotProc
         command: ["bash", "-c",
-            "swww query 2>/dev/null | grep 'image:' | head -1 | sed 's/.*image: //'"]
+            "awww query 2>/dev/null | grep 'image:' | head -1 | sed 's/.*image: //'"]
         running: false
         stdout: SplitParser {
             onRead: data => { root.prevWall = data.trim() }
