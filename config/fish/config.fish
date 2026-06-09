@@ -43,7 +43,7 @@ alias zc='zellij -s'
 alias zl='zellij ls'
 alias zac='za-no-dap pick'
 alias hx='helix'
-alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT=h NNN_PLUG=p:preview-tui nnn'
+alias nnn='NNN_FIFO=/tmp/nnn.fifo NNN_SPLIT=h NNN_PLUG=p:preview-tui command nnn'
 alias search='sk --preview "bat --color=always --style=numbers --line-range=:500 {}" | xargs nvim'
 alias mkpost='go run . artisan create:post'
 alias refreshenv='source ~/.config/fish/config.fish'
@@ -122,3 +122,5 @@ set -U fish_history_ignore_dups yes
 set -gx PATH $PATH /home/grimm/.lmstudio/bin
 
 fish_add_path -a /home/grimm/.foundry/bin
+
+fish_add_path -a "/home/grimm/.foundry/bin"
