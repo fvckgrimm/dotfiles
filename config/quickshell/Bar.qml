@@ -169,8 +169,12 @@ PanelWindow {
                     text: "\udb80\udd00"
                     textColor: "#ff416c"
                     borderColor: "#55ff416c"
-                    onClicked: Quickshell.execDetached(["bash", "-c", "$HOME/.config/hypr/scripts/screenshot_full"])
-                    onRightClicked: Quickshell.execDetached(["bash", "-c", "$HOME/.config/hypr/scripts/screenshot_area"])
+                    onClicked: {
+                        Hyprland.dispatch("hl.plugin.hyprcapture.open('fullscreen')")
+                    }
+                    onRightClicked: {
+                        Hyprland.dispatch("hl.plugin.hyprcapture.open('region')")
+                    }
                     tooltipText: "Screenshot"
                 }
 
