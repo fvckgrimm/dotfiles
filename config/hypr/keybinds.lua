@@ -29,20 +29,20 @@ hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call launcher emoji"))
 hl.bind("SUPER + BACKSLASH", hl.dsp.exec_cmd("qs ipc call launcher calc"))
 hl.bind("SUPER + N", hl.dsp.exec_cmd("qs ipc call todo toggle"))
 
--- WINDOW MANAGEMENT
-hl.bind("SUPER + Q", hl.dsp.exec_cmd("hyprctl dispatch killactive"))
-hl.bind("SUPER + SHIFT + Q", hl.dsp.exec_cmd("hyprctl dispatch exit"))
+-- --- NATIVE WINDOW MANAGEMENT --- --
+hl.bind("SUPER + Q", hl.dsp.window.close())
+hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
 hl.bind("SUPER + F", hl.dsp.window.fullscreen())
 hl.bind("SUPER + G", hl.dsp.window.float({ action = "toggle" }))
-hl.bind("SUPER + P", hl.dsp.window.pseudo())
-hl.bind("SUPER + Y", hl.dsp.exec_cmd("hyprctl keyword general:gaps_in 0 && hyprctl keyword general:gaps_out 0"))
-hl.bind("SUPER + U", hl.dsp.exec_cmd("hyprctl keyword general:gaps_in 4 && hyprctl keyword general:gaps_out 10"))
+hl.bind("SUPER + P", hl.dsp.window.pseudo({ action = "toggle" }))
 
--- Change Workspace Mode
-hl.bind("SUPER + SHIFT + G", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allfloat"))
-hl.bind("SUPER + SHIFT + G", hl.dsp.exec_cmd(notifycmd .. " 'Toggled All Float Mode'"))
-hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch workspaceopt allpseudo"))
-hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(notifycmd .. " 'Toggled All Pseudo Mode'"))
+-- Changing gaps dynamically using Lua functions instead of shell commands!
+hl.bind("SUPER + Y", function()
+	hl.config({ general = { gaps_in = 0, gaps_out = 0 } })
+end)
+hl.bind("SUPER + U", function()
+	hl.config({ general = { gaps_in = 4, gaps_out = 10 } })
+end)
 
 -- alternative focus binds
 hl.bind("SUPER + H", hl.dsp.focus({ direction = "l" }))
@@ -56,51 +56,55 @@ hl.bind("SUPER + SHIFT + L", hl.dsp.window.move({ direction = "r" }))
 hl.bind("SUPER + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
 hl.bind("SUPER + SHIFT + K", hl.dsp.window.move({ direction = "u" }))
 
--- SWITCH WORKSPACE & MOVE TO WORKSPACE
--- We can dynamically generate keys 1 through 9 using a lua loop!
+-- --- NATIVE WORKSPACE NAVIGATION --- --
 for i = 1, 9 do
 	local key = tostring(i)
-	hl.bind("SUPER + " .. key, hl.dsp.exec_cmd("hyprctl dispatch workspace " .. key))
-	hl.bind("SUPER + SHIFT + " .. key, hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace " .. key))
-	hl.bind("SUPER + CTRL + SHIFT + " .. key, hl.dsp.exec_cmd("hyprctl dispatch movetoworkspacesilent " .. key))
+	-- Switch to workspace
+	hl.bind("SUPER + " .. key, hl.dsp.focus({ workspace = key }))
+	-- Move window to workspace and switch to it
+	hl.bind("SUPER + SHIFT + " .. key, hl.dsp.window.move({ workspace = key, follow = true }))
+	-- Move window to workspace silently (do not follow)
+	hl.bind("SUPER + CTRL + SHIFT + " .. key, hl.dsp.window.move({ workspace = key, follow = false }))
 end
 
--- Keybinds for 0
-hl.bind("SUPER + 0", hl.dsp.exec_cmd("hyprctl dispatch workspace 10"))
-hl.bind("SUPER + SHIFT + 0", hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace 10"))
-hl.bind("SUPER + CTRL + SHIFT + 0", hl.dsp.exec_cmd("hyprctl dispatch movetoworkspacesilent 10"))
+-- Keybinds for workspace 10 (mapped to 0)
+hl.bind("SUPER + 0", hl.dsp.focus({ workspace = "10" }))
+hl.bind("SUPER + SHIFT + 0", hl.dsp.window.move({ workspace = "10", follow = true }))
+hl.bind("SUPER + CTRL + SHIFT + 0", hl.dsp.window.move({ workspace = "10", follow = false }))
 
--- RESIZE WINDOWS
+-- --- MOUSE BINDINGS --- --
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
+-- Scroll workspaces
+hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "e-1" }))
+
+-- RESIZE WINDOWS (Interactive via keyboard)
 hl.bind("SUPER + A", hl.dsp.window.resize({ x = -20, y = 0, relative = true }))
 hl.bind("SUPER + S", hl.dsp.window.resize({ x = 0, y = 20, relative = true }))
 hl.bind("SUPER + W", hl.dsp.window.resize({ x = 0, y = -20, relative = true }))
 hl.bind("SUPER + D", hl.dsp.window.resize({ x = 20, y = 0, relative = true }))
 
--- MOUSE BINDINGS
-hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
-hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
-hl.bind("SUPER + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
-hl.bind("SUPER + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
-
 -- --- SCROLLING LAYOUT SPECIFIC BINDS (NIRI STYLE) --- --
+
 -- Consume or Expel (Mod + BracketLeft / BracketRight)
--- If alone in a column, it consumes the adjacent window. If with other windows, it expels it to a new column.
 hl.bind("SUPER + bracketleft", hl.dsp.layout("consume_or_expel prev"))
 hl.bind("SUPER + bracketright", hl.dsp.layout("consume_or_expel next"))
+
 -- Cycle Preset Column Widths (Mod + R)
--- This cycles through the `explicit_column_widths` defined in hyprland.lua
 hl.bind("SUPER + R", hl.dsp.layout("colresize +conf"))
+
 -- Fine width adjustments (Mod + Minus / Mod + Equal)
--- Increases or decreases column width by 10%
 hl.bind("SUPER + minus", hl.dsp.layout("colresize -0.1"))
 hl.bind("SUPER + equal", hl.dsp.layout("colresize +0.1"))
+
 -- Maximize Column (Mod + F) vs True Fullscreen (Mod + Shift + F)
--- Niri `maximize-column` expands the column to take the screen without hiding the bar.
 hl.bind("SUPER + F", hl.dsp.layout("fit expand"))
 hl.bind("SUPER + SHIFT + F", hl.dsp.window.fullscreen())
+
 -- Center Column (Mod + C)
--- Forces the current active column to perfectly fit/center on your screen
 hl.bind("SUPER + C", hl.dsp.layout("fit active"))
+
 -- Move columns manually across the scroll space
 hl.bind("SUPER + SHIFT + bracketleft", hl.dsp.layout("swapcol l"))
 hl.bind("SUPER + SHIFT + bracketright", hl.dsp.layout("swapcol r"))
