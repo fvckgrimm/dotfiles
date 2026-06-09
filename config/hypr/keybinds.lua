@@ -8,10 +8,24 @@ local colorpicker = scriptsDir .. "/colorpicker"
 local powermenu = scriptsDir .. "/powermenu"
 local connect = "oneplush-connect"
 
--- SCREENSHOT SHIT
-hl.bind("Print", hl.dsp.exec_cmd(screenshot .. " screen"))
-hl.bind("CTRL + Print", hl.dsp.exec_cmd(screenshot .. " area"))
-hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("wl-paste | swappy -f -"))
+-- --- NATIVE SCREENSHOTS (HyprCapture) --- --
+-- Pressing just Super+Shift+S opens the interactive "fusion" overlay
+hl.bind("SUPER + SHIFT + S", function()
+	hl.plugin.hyprcapture.open()
+end)
+
+-- Direct modes (skips the mode selector)
+hl.bind("Print", function()
+	hl.plugin.hyprcapture.open("fullscreen")
+end)
+
+hl.bind("CTRL + Print", function()
+	hl.plugin.hyprcapture.open("region")
+end)
+
+hl.bind("ALT + Print", function()
+	hl.plugin.hyprcapture.open("window")
+end)
 
 -- MISC
 hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd("wlogout"))

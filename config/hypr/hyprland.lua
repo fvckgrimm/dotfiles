@@ -78,4 +78,18 @@ hl.config({
 			sensitivity = -0.5,
 		},
 	},
+
+	plugin = {
+		hyprcapture = {
+			default_mode = "region",
+			fusion_mode = true,
+			fullscreen_scope = "all",
+			window_background = "follow-system",
+			save = true,
+			clipboard = true,
+			show_thumbnail = true,
+			-- Expands to ~/Pictures/Screenshots
+			save_dir = "$XDG_PICTURES_DIR/Screenshots",
+		},
+	},
 })
