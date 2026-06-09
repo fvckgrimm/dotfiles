@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+
+# ==========================================
+# GRAVE: Arch Linux Declarative Wrapper
+# ==========================================
+
+# Defaults
+SYS_DIR="${SYSMGR_DIR:-$HOME/dotfiles}"   # Can be overridden by env var
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
+AUR_HELPER="yay"                          # Change to 'paru' if you prefer
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+# Parse global flags (like -d / --dir)
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -d|--dir)
+      SYS_DIR="$2"
+      shift 2
+      ;;
+    -*)
+      echo -e "${RED}Unknown option: $1${NC}"
+      exit 1
+      ;;
+    *)
+      break # End of global flags
+      ;;
+  esac
+done
+
+# Derived paths based on SYS_DIR
+PKG_LIST="${SYS_DIR}/package_lists/system.list"
+
+# ==========================================
+# PACKAGE MANAGEMENT
+# ==========================================
+
+_get_repo() {
+  local pkg=$1
+  # Query the installed package repository to track where it came from
+  local repo=$($AUR_HELPER -Qi "$pkg" 2>/dev/null | grep "^Repository" | awk -F': ' '{print $2}')
+  echo "${repo:-unknown}"
+}
+
+pkg_add() {
+  if [ -z "$1" ]; then
+    echo -e "${RED}Error: Provide packages to install.${NC}"
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$PKG_LIST")"
+  echo -e "${BLUE}Installing packages: $@${NC}"
+  
+  if $AUR_HELPER -S "$@"; then
+    for pkg in "$@"; do
+      # Remove existing entry if present to avoid duplicates
+      if [ -f "$PKG_LIST" ]; then
+        sed -i "/^${pkg}[[:space:]]/d" "$PKG_LIST" 2>/dev/null || true
+      fi
+      
+      local repo=$(_get_repo "$pkg")
+      echo "$pkg # [$repo]" >> "$PKG_LIST"
+      echo -e "${GREEN}Added $pkg to $PKG_LIST (Repo: $repo)${NC}"
+    done
+    sort -o "$PKG_LIST" "$PKG_LIST"
+  else
+    echo -e "${RED}Installation failed. List not updated.${NC}"
+  fi
+}
+
+pkg_rm() {
+  if [ -z "$1" ]; then
+    echo -e "${RED}Error: Provide packages to remove.${NC}"
+    exit 1
+  fi
+
+  echo -e "${YELLOW}Removing packages: $@${NC}"
+  if $AUR_HELPER -Rns "$@"; then
+    for pkg in "$@"; do
+      if [ -f "$PKG_LIST" ]; then
+        sed -i "/^${pkg}[[:space:]]/d" "$PKG_LIST"
+      fi
+      echo -e "${GREEN}Removed $pkg from $PKG_LIST${NC}"
+    done
+  else
+    echo -e "${RED}Removal failed. List not updated.${NC}"
+  fi
+}
+
+pkg_sync() {
+  echo -e "${BLUE}Syncing system state to match $PKG_LIST...${NC}"
+  if [ ! -f "$PKG_LIST" ]; then
+    echo -e "${YELLOW}No package list found at $PKG_LIST. Nothing to sync.${NC}"
+    return
+  fi
+
+  # Extract packages, ignoring comments and empty lines
+  local pkgs=$(awk '{print $1}' "$PKG_LIST" | grep -v '^#' | grep -v '^$')
+  
+  if [ -n "$pkgs" ]; then
+    echo "$pkgs" | xargs $AUR_HELPER -S --needed
+    echo -e "${GREEN}System is in sync with declarative list.${NC}"
+  else
+    echo -e "${YELLOW}Package list is empty.${NC}"
+  fi
+}
+
+# ==========================================
+# DOTFILE MANAGEMENT
+# ==========================================
+
+dot_init() {
+  echo -e "${BLUE}Ensuring dotfile structure in $SYS_DIR...${NC}"
+  mkdir -p "$SYS_DIR/config" "$SYS_DIR/scripts" "$SYS_DIR/package_lists"
+
+  # Default to creating in $HOME to match personal preference, 
+  # but recognize if they already put one in the repo.
+  local home_ignore="$HOME/.dotfilerc"
+  local repo_ignore="$SYS_DIR/.dotfilerc"
+
+  if [ ! -f "$home_ignore" ] && [ ! -f "$repo_ignore" ]; then
+    cat << 'EOF' > "$home_ignore"
+# .dotfilerc - Ignore list for sysmgr dotfile syncing (ripgrep format)
+.git/
+.gitignore
+README.md
+.DS_Store
+package_lists/
+EOF
+    echo -e "${GREEN}Created template $home_ignore${NC}"
+  else
+    echo -e "${YELLOW}A .dotfilerc already exists. Skipping creation.${NC}"
+  fi
+  echo -e "${GREEN}Init complete. You can now track $SYS_DIR with Git.${NC}"
+}
+
+dot_apply() {
+  echo -e "${BLUE}Applying dotfile symlinks from $SYS_DIR...${NC}"
+  
+  # Bash Array to hold multiple ignore files dynamically
+  local rg_args=()
+  
+  if [ -f "$HOME/.dotfilerc" ]; then
+    rg_args+=("--ignore-file=$HOME/.dotfilerc")
+    echo -e "  -> Using global ignore: ~/.dotfilerc"
+  fi
+  
+  if [ -f "$SYS_DIR/.dotfilerc" ]; then
+    rg_args+=("--ignore-file=$SYS_DIR/.dotfilerc")
+    echo -e "  -> Using repo ignore: $SYS_DIR/.dotfilerc"
+  fi
+
+  if [ ${#rg_args[@]} -eq 0 ]; then
+    echo -e "${YELLOW}Warning: No .dotfilerc found in ~ or $SYS_DIR. Searching all files...${NC}"
+  fi
+
+  # Symlink ~/.config directories
+  if [ -d "$SYS_DIR/config" ]; then
+    rg --files "$SYS_DIR/config" "${rg_args[@]}" | while read -r src; do
+      local rel_path="${src#$SYS_DIR/config/}"
+      local dest="$CONFIG_DIR/$rel_path"
+      
+      mkdir -p "$(dirname "$dest")"
+      _create_symlink "$src" "$dest"
+    done
+  fi
+
+  # Symlink ~/.scripts
+  if [ -d "$SYS_DIR/scripts" ]; then
+    mkdir -p "$HOME/.scripts"
+    rg --files "$SYS_DIR/scripts" "${rg_args[@]}" | while read -r src; do
+      local dest="$HOME/.scripts/$(basename "$src")"
+      _create_symlink "$src" "$dest"
+    done
+  fi
+  echo -e "${GREEN}Dotfiles applied successfully.${NC}"
+}
+
+_create_symlink() {
+  local src="$1"
+  local dest="$2"
+
+  if [ -e "$dest" ] || [ -L "$dest" ]; then
+    if [ "$(readlink -f "$dest")" = "$src" ]; then
+      return # Already properly symlinked
+    fi
+    
+    if [ ! -L "$dest" ]; then
+      mv "$dest" "${dest}.backup"
+      echo -e "${YELLOW}Backed up existing file to ${dest}.backup${NC}"
+    else
+      rm "$dest"
+    fi
+  fi
+
+  ln -s "$src" "$dest"
+  echo -e "${GREEN}Linked: ${dest#$HOME/} -> ${src#$SYS_DIR/}${NC}"
+}
+
+# ==========================================
+# MAIN ROUTING
+# ==========================================
+
+usage() {
+  echo -e "Usage: grave [-d/--dir <path>] <command> [args]"
+  echo -e ""
+  echo -e "Global Options:"
+  echo -e "  -d, --dir <path>     Override dotfiles directory (Default: ~/dotfiles)"
+  echo -e ""
+  echo -e "Package Commands:"
+  echo -e "  ${GREEN}pkg add <pkg>${NC}      Install package(s) and append to system.list"
+  echo -e "  ${GREEN}pkg rm <pkg>${NC}       Uninstall package(s) and remove from system.list"
+  echo -e "  ${GREEN}pkg sync${NC}           Read system.list and install missing packages"
+  echo -e ""
+  echo -e "Dotfile Commands:"
+  echo -e "  ${GREEN}dot init${NC}           Create base folders and template ~/.dotfilerc"
+  echo -e "  ${GREEN}dot apply${NC}          Symlink everything using ignores from ~/ and/or repo"
+  exit 1
+}
+
+if [ $# -eq 0 ]; then usage; fi
+
+COMMAND="$1"; shift
+SUBCOMMAND="$1"; shift
+
+case "$COMMAND" in
+  pkg)
+    case "$SUBCOMMAND" in
+      add) pkg_add "$@" ;;
+      rm|remove) pkg_rm "$@" ;;
+      sync) pkg_sync ;;
+      *) usage ;;
+    esac
+    ;;
+  dot)
+    case "$SUBCOMMAND" in
+      init) dot_init ;;
+      apply) dot_apply ;;
+      *) usage ;;
+    esac
+    ;;
+  *)
+    usage
+    ;;
+esac
