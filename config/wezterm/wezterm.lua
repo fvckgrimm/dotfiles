@@ -75,17 +75,37 @@ return {
 	default_cursor_style = "BlinkingUnderline",
 
 	-- X11
-	enable_wayland = true,
+	enable_wayland = false,
 
 	-- Keybinds
 	disable_default_key_bindings = true,
 	keys = {
+		{
+			key = "s",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action.ShowLauncherArgs({ flags = "FUZZY|WORKSPACES" }),
+		},
+		{
+			key = "9",
+			mods = "ALT",
+			action = wezterm.action.SwitchWorkspaceRelative(1),
+		},
+		{
+			key = "8",
+			mods = "ALT",
+			action = wezterm.action.SwitchWorkspaceRelative(-1),
+		},
 		{
 			key = [[|]],
 			mods = "CTRL|SHIFT",
 			action = wezterm.action({
 				SplitHorizontal = { domain = "CurrentPaneDomain" },
 			}),
+		},
+		{
+			key = "f",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action.Search("CurrentSelectionOrEmptyString"),
 		},
 		{
 			key = [[\]],
