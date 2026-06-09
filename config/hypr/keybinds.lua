@@ -82,10 +82,25 @@ hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind("SUPER + mouse_up", hl.dsp.exec_cmd("hyprctl dispatch workspace e+1"))
 hl.bind("SUPER + mouse_down", hl.dsp.exec_cmd("hyprctl dispatch workspace e-1"))
 
--- --- SCROLLING LAYOUT SPECIFIC BINDS --- --
-hl.bind("SUPER + bracketleft", hl.dsp.layout("move -col"))
-hl.bind("SUPER + bracketright", hl.dsp.layout("move +col"))
+-- --- SCROLLING LAYOUT SPECIFIC BINDS (NIRI STYLE) --- --
+-- Consume or Expel (Mod + BracketLeft / BracketRight)
+-- If alone in a column, it consumes the adjacent window. If with other windows, it expels it to a new column.
+hl.bind("SUPER + bracketleft", hl.dsp.layout("consume_or_expel prev"))
+hl.bind("SUPER + bracketright", hl.dsp.layout("consume_or_expel next"))
+-- Cycle Preset Column Widths (Mod + R)
+-- This cycles through the `explicit_column_widths` defined in hyprland.lua
+hl.bind("SUPER + R", hl.dsp.layout("colresize +conf"))
+-- Fine width adjustments (Mod + Minus / Mod + Equal)
+-- Increases or decreases column width by 10%
+hl.bind("SUPER + minus", hl.dsp.layout("colresize -0.1"))
+hl.bind("SUPER + equal", hl.dsp.layout("colresize +0.1"))
+-- Maximize Column (Mod + F) vs True Fullscreen (Mod + Shift + F)
+-- Niri `maximize-column` expands the column to take the screen without hiding the bar.
+hl.bind("SUPER + F", hl.dsp.layout("fit expand"))
+hl.bind("SUPER + SHIFT + F", hl.dsp.window.fullscreen())
+-- Center Column (Mod + C)
+-- Forces the current active column to perfectly fit/center on your screen
+hl.bind("SUPER + C", hl.dsp.layout("fit active"))
+-- Move columns manually across the scroll space
 hl.bind("SUPER + SHIFT + bracketleft", hl.dsp.layout("swapcol l"))
 hl.bind("SUPER + SHIFT + bracketright", hl.dsp.layout("swapcol r"))
-hl.bind("SUPER + C", hl.dsp.layout("expel"))
-hl.bind("SUPER + Z", hl.dsp.layout("consume"))

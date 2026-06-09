@@ -65,9 +65,10 @@ hl.config({
 	},
 
 	scrolling = {
-		-- Base setup for the scrolling layout
 		focus_fit_method = 1,
 		column_width = 0.5,
+		explicit_column_widths = "0.25, 0.5, 0.75, 1.0",
+		follow_focus = true,
 	},
 
 	-- Per-device config
