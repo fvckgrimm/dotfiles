@@ -61,12 +61,14 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: Hyprland.dispatch("workspace " + modelData.id)
+                    onClicked: {
+                        Hyprland.dispatch("hl.dsp.focus({ workspace = '" + modelData.id + "' })")
+                    }
                     onWheel: wheel => {
                         if (wheel.angleDelta.y > 0)
-                            Hyprland.dispatch("workspace e+1")
+                            Hyprland.dispatch("hl.dsp.focus({ workspace = 'e+1' })")
                         else
-                            Hyprland.dispatch("workspace e-1")
+                            Hyprland.dispatch("hl.dsp.focus({ workspace = 'e-1' })")
                     }
                 }
             }
