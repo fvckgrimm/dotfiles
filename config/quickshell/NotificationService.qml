@@ -9,6 +9,24 @@ Scope {
 
     // ── Public API ────────────────────────────────────────────────────────────
     property var notifications: []       // newest-first history, max 50
+    property var groupedNotifications: {
+        var groups = []
+        var map = {}
+        for (var i = 0; i < notifications.length; i++) {
+            var n = notifications[i]
+            if (!map[n.appName]) {
+                map[n.appName] = {
+                    appName: n.appName,
+                    icon: n.icon,
+                    notifications: [],
+                    expanded: false // UI state for the stack
+                }
+                groups.push(map[n.appName])
+            }
+            map[n.appName].notifications.push(n)
+        }
+        return groups
+    }
     property var snoozed:       []       // { notif, until (ms epoch) }
     property int unreadCount:   0
     signal newNotification(var notif)    // fired even when DnD (popup suppresses itself)

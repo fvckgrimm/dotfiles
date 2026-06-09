@@ -8,16 +8,26 @@ Item {
     property var notif: null
     property int cardWidth: 360
     property int cardHeight: 90
+    property bool expanded: false
 
     signal dismissed()
 
-    // Expand height if there are actions
+    // Expand height if there are actions or if text is expanded
     readonly property bool hasActions: (notif?.actions?.length ?? 0) > 0
     readonly property int  baseHeight: cardHeight
-    readonly property int  fullHeight: hasActions ? cardHeight + 28 : cardHeight
+    readonly property int  fullHeight: {
+        var h = cardHeight
+        if (hasActions) h += 28
+        if (expanded) h += Math.max(0, bodyText.implicitHeight - 32)
+        return h
+    }
 
     implicitWidth:  cardWidth
     implicitHeight: fullHeight
+    
+    Behavior on implicitHeight {
+        NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+    }
 
     // Slide in from right
     x: cardWidth + 20
@@ -62,6 +72,7 @@ Item {
         color: "#f00d1117"
         border.color: card.borderColor
         border.width: 1
+        clip: true
 
         // Urgency stripe
         Rectangle {
@@ -75,7 +86,7 @@ Item {
             anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 4 }
             height: 2; radius: 1
             color: "#0d0df0ff"
-            visible: !card.hasActions   // hide when actions row is there
+            visible: !card.hasActions && !card.expanded // hide when actions row is there or expanded
 
             Rectangle {
                 id: progressFill
@@ -95,7 +106,7 @@ Item {
         }
 
         ColumnLayout {
-            anchors { fill: parent; margins: 10; leftMargin: 16; bottomMargin: card.hasActions ? 4 : 12 }
+            anchors { fill: parent; margins: 10; leftMargin: 16; bottomMargin: (card.hasActions || card.expanded) ? 4 : 12 }
             spacing: 3
 
             // Header
@@ -114,6 +125,24 @@ Item {
                     text: card.notif?.time ?? ""
                     color: "#444d62"
                     font.family: Theme.fontFamily; font.pointSize: 7
+                }
+
+                // Copy button
+                Text {
+                    text: "󰆏"
+                    color: copyMa.containsMouse ? Theme.cyan : "#555e7a"
+                    font.pointSize: 8
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    MouseArea {
+                        id: copyMa
+                        anchors { fill: parent; margins: -4 }
+                        hoverEnabled: true
+                        onClicked: {
+                            var textToCopy = (card.notif?.summary ? card.notif.summary + "\n" : "") + (card.notif?.body ?? "")
+                            // Use bash and printf to safely pipe text to wl-copy
+                            Quickshell.execDetached(["bash", "-c", "printf '%s' " + JSON.stringify(textToCopy) + " | wl-copy"])
+                        }
+                    }
                 }
 
                 // Snooze button
@@ -147,13 +176,34 @@ Item {
             }
 
             // Body
-            Text {
-                text: card.notif?.body ?? ""
-                color: "#9aa5c4"
-                font.family: Theme.fontFamily; font.pointSize: 8
-                Layout.fillWidth: true; wrapMode: Text.WordWrap
-                textFormat: Text.PlainText; maximumLineCount: 2; elide: Text.ElideRight
-                visible: text !== ""
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                visible: (card.notif?.body ?? "") !== ""
+
+                Text {
+                    id: bodyText
+                    text: card.notif?.body ?? ""
+                    color: "#9aa5c4"
+                    font.family: Theme.fontFamily; font.pointSize: 8
+                    Layout.fillWidth: true; wrapMode: Text.WordWrap
+                    textFormat: Text.PlainText
+                    maximumLineCount: card.expanded ? 20 : 2
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    id: expandToggle
+                    text: card.expanded ? "Show less" : "Show more"
+                    color: Theme.cyan
+                    font.family: Theme.fontFamily; font.pointSize: 7
+                    visible: bodyText.lineCount > 2 || card.expanded
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: card.expanded = !card.expanded
+                    }
+                }
             }
 
             // Action buttons row

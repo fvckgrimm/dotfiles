@@ -188,145 +188,277 @@ PopupWindow {
                         ColumnLayout {
                             id: notifListCol
                             width: parent.width
-                            spacing: 6
+                            spacing: 12 // Increased spacing between groups
 
                             Repeater {
-                                model: NotificationService.notifications ?? []
+                                model: NotificationService.groupedNotifications
 
-                                delegate: Rectangle {
+                                delegate: ColumnLayout {
+                                    id: groupCol
                                     required property var modelData
                                     Layout.fillWidth: true
-                                    implicitHeight:   itemLayout.implicitHeight + 16
-                                    radius: 4
-                                    color:        itemMa.containsMouse ? "#1a5bcefa" : "#0d5bcefa"
-                                    border.color: "#1a5bcefa"; border.width: 1
-                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                    spacing: 6 // Spacing between header and expanded items
 
-                                    // Urgency stripe
+                                    property bool expanded: false
+
+                                    // Stack Header / Top Notification
                                     Rectangle {
-                                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 1 }
-                                        width: 2; radius: 2
-                                        color: {
-                                            var u = modelData.urgency ?? 1
-                                            if (u === 2) return "#ff0000"
-                                            if (u === 0) return "#555e7a"
-                                            return "#0df0ff"
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        id: itemLayout
-                                        anchors { fill: parent; margins: 8; leftMargin: 14 }
-                                        spacing: 3
-
-                                        // Header row
-                                        RowLayout {
-                                            Layout.fillWidth: true; spacing: 6
-
-                                            Text {
-                                                text: modelData.appName; color: "#7984a4"
-                                                font.family: Theme.fontFamily; font.pointSize: 7
-                                                Layout.fillWidth: true; elide: Text.ElideRight
-                                            }
-                                            Text {
-                                                text: modelData.time; color: "#444d62"
-                                                font.family: Theme.fontFamily; font.pointSize: 7
-                                            }
-                                            // Filter this app
-                                            Text {
-                                                text: "󰈈"; color: filterAppMa.containsMouse ? "#ffcc00" : "#444d62"
-                                                font.pointSize: 7
-                                                Behavior on color { ColorAnimation { duration: 100 } }
-                                                MouseArea {
-                                                    id: filterAppMa; anchors { fill: parent; margins: -4 }
-                                                    hoverEnabled: true
-                                                    onClicked: {
-                                                        NotificationService.filterApp(modelData.appName)
-                                                        NotificationService.dismiss(modelData)
-                                                    }
-                                                }
-                                            }
-                                            // Dismiss
-                                            Text {
-                                                text: "✕"; color: "#555e7a"; font.pointSize: 7
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    onClicked: NotificationService.dismiss(modelData)
+                                        Layout.fillWidth: true
+                                        implicitHeight: topItemLayout.implicitHeight + 16
+                                        radius: 6
+                                        color: groupMa.containsMouse ? "#1e2233" : "#161925"
+                                        border.color: groupMa.containsMouse ? "#440df0ff" : "#1a5bcefa"
+                                        border.width: 1
+                                        
+                                        MouseArea {
+                                            id: groupMa; anchors.fill: parent; hoverEnabled: true
+                                            onClicked: {
+                                                if (modelData.notifications.length > 1) {
+                                                    groupCol.expanded = !groupCol.expanded
                                                 }
                                             }
                                         }
 
-                                        // Summary
-                                        Text {
-                                            text: modelData.summary; color: "#c8d2e0"
-                                            font.family: Theme.fontFamily; font.pointSize: 8; font.bold: true
-                                            Layout.fillWidth: true; wrapMode: Text.WordWrap
-                                            visible: text !== ""
+                                        // Stack visual effect (double stack for more depth)
+                                        Rectangle {
+                                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 6; bottomMargin: -6 }
+                                            height: 6; radius: 6; z: -2
+                                            color: "#0a0df0ff"; border.color: "#125bcefa"; border.width: 1
+                                            visible: modelData.notifications.length > 1 && !groupCol.expanded
+                                        }
+                                        Rectangle {
+                                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 3; bottomMargin: -3 }
+                                            height: 6; radius: 6; z: -1
+                                            color: "#0d5bcefa"; border.color: "#1a5bcefa"; border.width: 1
+                                            visible: modelData.notifications.length > 1 && !groupCol.expanded
                                         }
 
-                                        // Body
-                                        Text {
-                                            text: modelData.body; color: "#7984a4"
-                                            font.family: Theme.fontFamily; font.pointSize: 7
-                                            Layout.fillWidth: true; wrapMode: Text.WordWrap
-                                            textFormat: Text.PlainText; maximumLineCount: 4
-                                            elide: Text.ElideRight; visible: text !== ""
-                                        }
-
-                                        // Action buttons
-                                        RowLayout {
-                                            Layout.fillWidth: true; spacing: 4
-                                            visible: (modelData.actions?.length ?? 0) > 0
-
-                                            // Capture outer notif so inner Repeater can reference it
-                                            property var notif: modelData
-
-                                            Repeater {
-                                                model: modelData.actions ?? []
-                                                delegate: Rectangle {
-                                                    required property var modelData
-                                                    implicitWidth:  actLbl.implicitWidth + 14; implicitHeight: 20
-                                                    radius: 3
-                                                    color: actMa.containsMouse ? "#220df0ff" : "#110d1117"
-                                                    border.color: "#330df0ff"; border.width: 1
-                                                    Behavior on color { ColorAnimation { duration: 100 } }
-                                                    Text {
-                                                        id: actLbl; anchors.centerIn: parent
-                                                        text: modelData.label; color: "#0df0ff"
-                                                        font.family: Theme.fontFamily; font.pointSize: 7
-                                                    }
-                                                    MouseArea {
-                                                        id: actMa; anchors.fill: parent; hoverEnabled: true
-                                                        onClicked: NotificationService.invokeAction(
-                                                            parent.parent.parent.notif, modelData.id)
-                                                    }
-                                                }
+                                        // Urgency stripe (from the first notif)
+                                        Rectangle {
+                                            anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 1 }
+                                            width: 3; radius: 3
+                                            color: {
+                                                var u = modelData.notifications[0].urgency ?? 1
+                                                if (u === 2) return Theme.red
+                                                if (u === 0) return Theme.textDimmer
+                                                return Theme.cyan
                                             }
+                                        }
 
-                                            // Snooze from center too
-                                            Rectangle {
-                                                implicitWidth: snoozeCenterLbl.implicitWidth + 14; implicitHeight: 20
-                                                radius: 3; color: snoozeCenterMa.containsMouse ? "#110d1117" : "transparent"
-                                                border.color: "#225bcefa"; border.width: 1
+                                        ColumnLayout {
+                                            id: topItemLayout
+                                            anchors { fill: parent; margins: 10; leftMargin: 16 }
+                                            spacing: 4
+
+                                            // Header row
+                                            RowLayout {
+                                                Layout.fillWidth: true; spacing: 8
+
                                                 Text {
-                                                    id: snoozeCenterLbl; anchors.centerIn: parent
-                                                    text: "󰒲 snooze"; color: "#555e7a"
+                                                    text: modelData.appName; color: Theme.textDim
+                                                    font.family: Theme.fontFamily; font.pointSize: 7; font.bold: true
+                                                    Layout.fillWidth: true; elide: Text.ElideRight
+                                                }
+                                                
+                                                // Stack count badge
+                                                Rectangle {
+                                                    visible: modelData.notifications.length > 1
+                                                    implicitWidth: stackCount.implicitWidth + 10
+                                                    implicitHeight: 16; radius: 8
+                                                    color: "#220df0ff"; border.color: "#440df0ff"; border.width: 1
+                                                    Text {
+                                                        id: stackCount
+                                                        anchors.centerIn: parent
+                                                        text: modelData.notifications.length
+                                                        color: Theme.cyan; font.family: Theme.fontFamily; font.pointSize: 7; font.bold: true
+                                                    }
+                                                }
+
+                                                Text {
+                                                    text: modelData.notifications[0].time; color: Theme.textDimmer
                                                     font.family: Theme.fontFamily; font.pointSize: 7
                                                 }
-                                                MouseArea {
-                                                    id: snoozeCenterMa; anchors.fill: parent; hoverEnabled: true
-                                                    onClicked: NotificationService.snooze(parent.parent.notif, 15)
+
+                                                // Copy button
+                                                Text {
+                                                    text: "󰆏"
+                                                    color: copyTopMa.containsMouse ? Theme.cyan : Theme.textDimmer
+                                                    font.pointSize: 8
+                                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                                    MouseArea {
+                                                        id: copyTopMa
+                                                        anchors { fill: parent; margins: -4 }
+                                                        hoverEnabled: true
+                                                        onClicked: {
+                                                            var n = modelData.notifications[0]
+                                                            var textToCopy = (n.summary ? n.summary + "\n" : "") + (n.body ?? "")
+                                                            Quickshell.execDetached(["bash", "-c", "printf '%s' " + JSON.stringify(textToCopy) + " | wl-copy"])
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                // Expand/Collapse Stack
+                                                Text {
+                                                    visible: modelData.notifications.length > 1
+                                                    text: groupCol.expanded ? "󰅃" : "󰅀"
+                                                    color: Theme.textDim; font.pointSize: 9
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: groupCol.expanded = !groupCol.expanded
+                                                    }
+                                                }
+
+                                                // Dismiss Group
+                                                Text {
+                                                    text: "✕"; color: Theme.red; font.pointSize: 8; opacity: 0.7
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: {
+                                                            modelData.notifications.forEach(n => NotificationService.dismiss(n))
+                                                        }
+                                                    }
                                                 }
                                             }
 
-                                            Item { Layout.fillWidth: true }
+                                            // Summary
+                                            Text {
+                                                text: modelData.notifications[0].summary; color: Theme.textPrimary
+                                                font.family: Theme.fontFamily; font.pointSize: 8; font.bold: true
+                                                Layout.fillWidth: true; wrapMode: Text.WordWrap
+                                                visible: text !== ""
+                                            }
+
+                                            // Body
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 2
+                                                visible: (modelData.notifications[0].body ?? "") !== ""
+                                                
+                                                property bool bodyExpanded: false
+
+                                                Text {
+                                                    id: topBodyText
+                                                    text: modelData.notifications[0].body; color: Theme.textDim
+                                                    font.family: Theme.fontFamily; font.pointSize: 7.5
+                                                    Layout.fillWidth: true; wrapMode: Text.WordWrap
+                                                    textFormat: Text.PlainText
+                                                    maximumLineCount: parent.bodyExpanded ? 20 : 2
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    text: parent.bodyExpanded ? "Show less" : "Show more"
+                                                    color: Theme.cyan; opacity: 0.8
+                                                    font.family: Theme.fontFamily; font.pointSize: 6.5
+                                                    visible: topBodyText.lineCount > 2 || parent.bodyExpanded
+                                                    
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: parent.parent.bodyExpanded = !parent.parent.bodyExpanded
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
-                                    MouseArea {
-                                        id: itemMa; anchors.fill: parent; hoverEnabled: true
-                                        propagateComposedEvents: true
-                                        onClicked: mouse => mouse.accepted = false
+                                    // Expanded items
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        visible: groupCol.expanded
+                                        spacing: 6
+                                        Layout.leftMargin: 12
+
+                                        Repeater {
+                                            model: modelData.notifications.slice(1)
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: subItemLayout.implicitHeight + 14
+                                                radius: 6
+                                                color: subMa.containsMouse ? "#1a1e2e" : "#111420"
+                                                border.color: "#1a5bcefa"; border.width: 1
+
+                                                MouseArea {
+                                                    id: subMa; anchors.fill: parent; hoverEnabled: true
+                                                }
+
+                                                ColumnLayout {
+                                                    id: subItemLayout
+                                                    anchors { fill: parent; margins: 8; leftMargin: 12 }
+                                                    spacing: 3
+
+                                                    RowLayout {
+                                                        Layout.fillWidth: true; spacing: 6
+                                                        Text {
+                                                            text: modelData.time; color: Theme.textDimmer
+                                                            font.family: Theme.fontFamily; font.pointSize: 6.5
+                                                            Layout.fillWidth: true
+                                                        }
+                                                        
+                                                        // Copy button
+                                                        Text {
+                                                            text: "󰆏"
+                                                            color: copySubMa.containsMouse ? Theme.cyan : Theme.textDimmer
+                                                            font.pointSize: 7
+                                                            MouseArea {
+                                                                id: copySubMa
+                                                                anchors { fill: parent; margins: -4 }
+                                                                hoverEnabled: true
+                                                                onClicked: {
+                                                                    var textToCopy = (modelData.summary ? modelData.summary + "\n" : "") + (modelData.body ?? "")
+                                                                    Quickshell.execDetached(["bash", "-c", "printf '%s' " + JSON.stringify(textToCopy) + " | wl-copy"])
+                                                                }
+                                                            }
+                                                        }
+
+                                                        Text {
+                                                            text: "✕"; color: Theme.red; font.pointSize: 7; opacity: 0.6
+                                                            MouseArea {
+                                                                anchors.fill: parent
+                                                                onClicked: NotificationService.dismiss(modelData)
+                                                            }
+                                                        }
+                                                    }
+
+                                                    Text {
+                                                        text: modelData.summary; color: Theme.textPrimary
+                                                        font.family: Theme.fontFamily; font.pointSize: 7.5; font.bold: true
+                                                        Layout.fillWidth: true; elide: Text.ElideRight
+                                                    }
+
+                                                    // Body with expansion
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 1
+                                                        visible: (modelData.body ?? "") !== ""
+                                                        
+                                                        property bool subBodyExpanded: false
+
+                                                        Text {
+                                                            id: subBodyText
+                                                            text: modelData.body; color: Theme.textDim
+                                                            font.family: Theme.fontFamily; font.pointSize: 7
+                                                            Layout.fillWidth: true; wrapMode: Text.WordWrap
+                                                            textFormat: Text.PlainText
+                                                            maximumLineCount: parent.subBodyExpanded ? 20 : 2
+                                                            elide: Text.ElideRight
+                                                        }
+
+                                                        Text {
+                                                            text: parent.subBodyExpanded ? "Show less" : "Show more"
+                                                            color: Theme.cyan; opacity: 0.8
+                                                            font.family: Theme.fontFamily; font.pointSize: 6
+                                                            visible: subBodyText.lineCount > 2 || parent.subBodyExpanded
+                                                            
+                                                            MouseArea {
+                                                                anchors.fill: parent
+                                                                onClicked: parent.parent.subBodyExpanded = !parent.parent.subBodyExpanded
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
