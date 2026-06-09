@@ -235,7 +235,7 @@ spawn-at-startup "xwayland-satellite"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
 spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
 //spawn-at-startup "~/.config/niri/exec_and_signal.sh"
-
+spawn-at-startup "awww-daemon"
 spawn-at-startup "mullvad" "connect"
 spawn-at-startup "opensnitch-ui"
 spawn-at-startup "blueman-applet"
