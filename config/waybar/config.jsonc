@@ -12,8 +12,8 @@
     "modules-left": [
         //"custom/rofi",
         "custom/fuzzel",
-        //"hyprland/workspaces",
-        "niri/workspaces",
+        "hyprland/workspaces",
+        //"niri/workspaces",
         //"hyprland/submap",
         "custom/weather",
         "temperature"
