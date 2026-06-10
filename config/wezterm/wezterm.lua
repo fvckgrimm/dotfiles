@@ -75,7 +75,7 @@ return {
 	default_cursor_style = "BlinkingUnderline",
 
 	-- X11
-	enable_wayland = false,
+	enable_wayland = true,
 
 	-- Keybinds
 	disable_default_key_bindings = true,
@@ -197,7 +197,7 @@ return {
 		{
 			key = "c",
 			mods = "CTRL|SHIFT",
-			action = wezterm.action({ CopyTo = "ClipboardAndPrimarySelection" }),
+			action = wezterm.action({ CopyTo = "Clipboard" }),
 		},
 	},
 
