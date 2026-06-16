@@ -168,6 +168,8 @@ PanelWindow {
             "    '/usr/share/icons/hicolor/scalable/apps',\n" +
             "    '/usr/share/icons/Papirus/48x48/apps',\n" +
             "    '/usr/share/icons/breeze/apps/48',\n" +
+            "    os.path.expanduser('~/.nix-profile/share/icons/hicolor/32x32/apps'),\n" +
+            "    os.path.expanduser('~/.nix-profile/share/icons/hicolor/scalable/apps'),\n" +
             "    '/usr/share/pixmaps',\n" +
             "    os.path.expanduser('~/.local/share/icons'),\n" +
             "]\n" +
@@ -185,7 +187,8 @@ PanelWindow {
             "\n" +
             "# Parse .desktop files\n" +
             "app_dirs = ['/usr/share/applications', '/usr/local/share/applications',\n" +
-            "            os.path.expanduser('~/.local/share/applications')]\n" +
+            "            os.path.expanduser('~/.local/share/applications'),\n" + 
+            "            os.path.expanduser('~/.nix-profile/share/applications'),]\n" +
             "seen = set()\n" +
             "entries = []\n" +
             "for d in app_dirs:\n" +
