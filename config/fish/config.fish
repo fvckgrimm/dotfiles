@@ -62,6 +62,8 @@ zoxide init fish --cmd cd | source
 # Starship
 starship init fish | source
 
+mise activate fish | source
+
 # Functions
 function pip
     set output (~/bins/pyenv.sh $argv)
