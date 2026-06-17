@@ -16,6 +16,7 @@ Rectangle {
 
     signal clicked()
     signal rightClicked()
+    signal wheel(var wheel)
 
     implicitHeight: 22
     implicitWidth: row.implicitWidth + 20
@@ -66,6 +67,7 @@ Rectangle {
             if (mouse.button === Qt.RightButton) root.rightClicked()
             else root.clicked()
         }
+        onWheel: wheel => root.wheel(wheel)
     }
 
     ToolTip {

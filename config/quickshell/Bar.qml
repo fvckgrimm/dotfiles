@@ -107,9 +107,9 @@ PanelWindow {
                     onClicked: WallpaperService.toggle()
                 }
 
-                WorkspacesWidget {}
-                WeatherWidget {}
-                TempWidget {}
+                WorkspacesWidget { visible: SettingsService.showWorkspaces }
+                WeatherWidget { visible: SettingsService.showWeather }
+                TempWidget { visible: SettingsService.showTemp }
             }
 
             // CENTER
@@ -124,13 +124,13 @@ PanelWindow {
                 anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 6 }
                 spacing: 2
 
-                StorageWidget {}
-                MemoryWidget {}
-                CpuWidget {}
-                BatteryWidget {}
+                StorageWidget { visible: SettingsService.showStorage }
+                MemoryWidget { visible: SettingsService.showMemory }
+                CpuWidget { visible: SettingsService.showCpu }
+                BatteryWidget { visible: SettingsService.showBattery }
                 AudioWidget {}
-                NetworkWidget {}
-                MediaWidget {}
+                NetworkWidget { visible: SettingsService.showNetwork }
+                MediaWidget { visible: SettingsService.showMedia }
 
                 BarButton {
                     text: "󰒓"

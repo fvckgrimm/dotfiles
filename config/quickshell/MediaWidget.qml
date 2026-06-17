@@ -7,6 +7,23 @@ Item {
     implicitHeight: 22
     implicitWidth: visible ? chip.implicitWidth : 0
 
+    Component.onCompleted: {
+        console.log("DEBUG: MediaWidget completed. Mpris.players count: " + Mpris.players.length)
+        for (var i = 0; i < Mpris.players.length; i++) {
+            console.log("DEBUG: player on init: " + Mpris.players[i].identity + " state=" + Mpris.players[i].playbackState)
+        }
+    }
+
+    Connections {
+        target: Mpris
+        function onPlayersChanged() {
+            console.log("DEBUG: Mpris.players changed. Count: " + Mpris.players.length)
+            for (var i = 0; i < Mpris.players.length; i++) {
+                console.log("DEBUG: player: " + Mpris.players[i].identity + " state=" + Mpris.players[i].playbackState)
+            }
+        }
+    }
+
     // Use the first active player, prefer one that's Playing
     property MprisPlayer activePlayer: {
         var players = Mpris.players
@@ -20,8 +37,12 @@ Item {
 
     readonly property string mediaIcon: {
         if (!activePlayer) return ""
-        if (activePlayer.identity?.toLowerCase().includes("spotify")) return ""
-        return "🎜"
+        var ident = activePlayer.identity?.toLowerCase() ?? ""
+        if (ident.includes("spotify")) return "󰓇"
+        if (ident.includes("firefox")) return "󰈹"
+        if (ident.includes("chrome") || ident.includes("chromium")) return "󰊯"
+        if (ident.includes("mpv")) return "󰝚"
+        return "󰝚"
     }
 
     readonly property string trackText: {
@@ -49,11 +70,6 @@ Item {
 
         onClicked: { if (root.activePlayer) root.activePlayer.togglePlaying() }
         onRightClicked: { if (root.activePlayer) root.activePlayer.next() }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.NoButton
         onWheel: wheel => {
             if (!root.activePlayer) return
             if (wheel.angleDelta.y > 0) root.activePlayer.previous()
