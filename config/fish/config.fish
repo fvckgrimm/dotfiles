@@ -126,3 +126,7 @@ set -gx PATH $PATH /home/grimm/.lmstudio/bin
 fish_add_path -a /home/grimm/.foundry/bin
 
 fish_add_path -a "/home/grimm/.foundry/bin"
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/grimm/.local/bin" $PATH
