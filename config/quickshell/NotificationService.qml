@@ -148,6 +148,30 @@ Scope {
         root.unreadCount = 0
     }
 
+    // ── Self-sent notifications (TodoService reminders, etc.) ─────────────────
+    // Injects a locally-generated notification into history and fires
+    // newNotification so the popup shows it (popup still honors DnD).
+    function send(opts) {
+        var n = {
+            id:      "qs-" + Date.now() + "-" + Math.floor(Math.random() * 100000),
+            appName: opts.appName ?? "QuickShell",
+            summary: opts.summary ?? "",
+            body:    opts.body ?? "",
+            icon:    opts.icon ?? "",
+            urgency: opts.urgency ?? 1,
+            time:    Qt.formatTime(new Date(), "hh:mm"),
+            actions: [],
+            raw:     null,
+            local:   true
+        }
+        var list = root.notifications.slice()
+        list.unshift(n)
+        if (list.length > 50) list.pop()
+        root.notifications = list
+        root.unreadCount++
+        root.newNotification(n)
+    }
+
     // ── Notification server ───────────────────────────────────────────────────
     NotificationServer {
         id: server

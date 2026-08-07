@@ -1,38 +1,44 @@
 import QtQuick
 import QtQuick.Controls
 
-// Reusable pill-style button used for launcher, screenshot, power, etc.
+// Reusable flat bar button. No permanent borders/backgrounds — state is
+// communicated with a Material-style hover/active tonal layer instead of
+// a colored border, so the bar reads as one surface, not a row of boxes.
 Rectangle {
     id: root
-
     property string text: ""
-    property string textColor: "#e5e5e5"
+    property string textColor: Theme.surfaceText
+    // Accent color for the "active/toggled" state. "transparent" = inactive.
     property string borderColor: "transparent"
     property string tooltipText: ""
-    property string bgColor: "#661e1e28"
+    property string bgColor: "transparent"
 
     signal clicked()
     signal rightClicked()
+    signal wheel(var wheel)
 
-    implicitWidth: label.implicitWidth + 16
-    implicitHeight: 22
-    radius: 2
-    color: hovered ? "#991e1e28" : bgColor
-    border.color: borderColor
-    border.width: 1
-
+    readonly property bool isActive: borderColor !== "transparent"
     property bool hovered: mouseArea.containsMouse
 
-    Behavior on color { ColorAnimation { duration: 150 } }
+    implicitWidth: label.implicitWidth + Theme.spacingLg * 2
+    implicitHeight: 26
+    radius: Theme.radiusMd
+    color: isActive
+        ? Theme.withAlpha(borderColor, hovered ? 0.22 : 0.14)
+        : (hovered ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : bgColor)
+    border.width: 0
+
+    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
 
     Text {
         id: label
         anchors.centerIn: parent
         text: root.text
-        color: root.textColor
-        font.family: "JetBrainsMono Nerd Font"
-        font.pointSize: 10
+        color: root.isActive ? root.borderColor : root.textColor
+        font.family: Theme.fontFamily
+        font.pointSize: Theme.titleSmall
         font.bold: true
+        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
     }
 
     MouseArea {
@@ -47,23 +53,21 @@ Rectangle {
         onWheel: wheel => root.wheel(wheel)
     }
 
-    signal wheel(var wheel)
-
-    // Tooltip
     ToolTip {
         visible: mouseArea.containsMouse && root.tooltipText !== ""
         text: root.tooltipText
         delay: 600
         background: Rectangle {
-            color: "#d90d1117"
-            border.color: "#335bcefa"
-            radius: 4
+            color: Theme.cardColor()
+            border.color: Theme.cardBorder()
+            border.width: 1
+            radius: Theme.radiusSm
         }
         contentItem: Text {
             text: root.tooltipText
-            color: "#d8e0f0"
-            font.family: "JetBrainsMono Nerd Font"
-            font.pointSize: 8
+            color: Theme.surfaceText
+            font.family: Theme.fontFamily
+            font.pointSize: Theme.labelLarge
         }
     }
 }

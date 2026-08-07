@@ -8,16 +8,14 @@ import QtQuick.Layouts
 PopupWindow {
     id: root
     implicitWidth: 300
-    implicitHeight: mainCol.implicitHeight + 24
+    implicitHeight: mainCol.implicitHeight + Theme.spacingXl * 2
     color: "transparent"
 
-    // State
     property int volume: 0
     property bool muted: false
     property int brightness: 100
     property bool showSettings: false
 
-    // Poll volume
     Process {
         id: volPoll
         command: ["bash", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@"]
@@ -31,7 +29,6 @@ PopupWindow {
         }
     }
 
-    // Poll brightness
     Process {
         id: brightPoll
         command: ["bash", "-c", "brightnessctl get 2>/dev/null; brightnessctl max 2>/dev/null"]
@@ -57,110 +54,269 @@ PopupWindow {
         else { showSettings = false }
     }
 
+    // MPRIS position doesn't update reactively on its own — re-read it
+    // periodically while the card is visible (see MediaService.poll).
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.visible && MediaService.hasPlayer
+        onTriggered: MediaService.poll()
+    }
+
     Rectangle {
         anchors.fill: parent
-        anchors.margins: 4
-        radius: 8
-        color: "#f00d1117"
-        border.color: "#335bcefa"
+        anchors.margins: Theme.spacingXs
+        radius: Theme.radiusXl
+        color: Theme.cardColor()
+        border.color: Theme.cardBorder()
         border.width: 1
 
         ColumnLayout {
             id: mainCol
-            anchors { fill: parent; margins: 16 }
-            spacing: 14
+            anchors { fill: parent; margins: Theme.spacingXl }
+            spacing: Theme.spacingLg
 
-            // Header
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: Theme.spacingMd
                 Text {
                     text: root.showSettings ? "󰒓  Settings" : "󰒓  Control Center"
-                    color: "#0df0ff"
+                    color: Theme.primary
                     font.family: Theme.fontFamily
-                    font.pointSize: 9
+                    font.pointSize: Theme.bodyLarge
                     font.bold: true
                     Layout.fillWidth: true
                 }
-                // Gear/Settings Toggle Button
                 Rectangle {
-                    implicitWidth: 16; implicitHeight: 16
-                    color: "transparent"
+                    implicitWidth: 20; implicitHeight: 20; radius: Theme.radiusSm
+                    color: gearMa.containsMouse ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : "transparent"
                     Text {
                         anchors.centerIn: parent
                         text: root.showSettings ? "󰅖" : "󰒓"
-                        color: gearMa.containsMouse ? "#0df0ff" : "#7984a4"
+                        color: Theme.surfaceTextVariant
                         font.family: Theme.fontFamily
-                        font.pointSize: 10
+                        font.pointSize: Theme.titleSmall
                     }
-                    MouseArea {
-                        id: gearMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.showSettings = !root.showSettings
-                    }
+                    MouseArea { id: gearMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.showSettings = !root.showSettings }
                 }
-                Text {
-                    text: "✕"
-                    color: closeMa.containsMouse ? "#ff416c" : "#7984a4"
-                    font.pointSize: 9
-                    font.family: Theme.fontFamily
-                    MouseArea {
-                        id: closeMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.visible = false
+                Rectangle {
+                    implicitWidth: 20; implicitHeight: 20; radius: Theme.radiusSm
+                    color: closeMa.containsMouse ? Theme.withAlpha(Theme.error, 0.16) : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: closeMa.containsMouse ? Theme.error : Theme.surfaceTextVariant
+                        font.pointSize: Theme.labelLarge
                     }
+                    MouseArea { id: closeMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.visible = false }
                 }
             }
 
-            // Divider
-            Rectangle { Layout.fillWidth: true; height: 1; color: "#1a5bcefa" }
+            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
 
             // CONTROLS VIEW
             ColumnLayout {
                 id: controlsView
                 Layout.fillWidth: true
                 visible: !root.showSettings
-                spacing: 14
+                spacing: Theme.spacingLg
 
-                // Volume
+                // ── NOW PLAYING ───────────────────────────────────────────
+                ColumnLayout {
+                    id: nowPlayingCard
+                    Layout.fillWidth: true
+                    visible: MediaService.hasPlayer
+                    spacing: Theme.spacingSm
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingMd
+
+                        Rectangle {
+                            Layout.preferredWidth: 56
+                            Layout.preferredHeight: 56
+                            radius: Theme.radiusMd
+                            clip: true
+                            color: Theme.surfaceContainerHigh
+
+                            Image {
+                                anchors.fill: parent
+                                source: MediaService.artUrl
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: false
+                                visible: MediaService.artUrl !== ""
+                            }
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\u{f001}"
+                                color: Theme.tertiary
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.titleMedium
+                                visible: MediaService.artUrl === ""
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.spacingXs
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: MediaService.title || MediaService.identity
+                                color: Theme.surfaceText
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.bodyMedium
+                                font.bold: true
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: (MediaService.artist + (MediaService.album ? " · " + MediaService.album : "")).trim()
+                                color: Theme.surfaceTextVariant
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelMedium
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: MediaService.identity
+                                color: Theme.surfaceTextDim
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelSmall
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        ColumnLayout {
+                            spacing: Theme.spacingXs
+                            RowLayout {
+                                spacing: Theme.spacingXs
+                                MediaIconButton {
+                                    size: 26
+                                    glyph: "\u{f048}"  // fa step-backward
+                                    tooltipText: "Previous"
+                                    onClicked: MediaService.previous()
+                                }
+                                MediaIconButton {
+                                    size: 30
+                                    glyph: MediaService.isPlaying ? "\u{f04c}" : "\u{f04b}"  // fa pause/play
+                                    tooltipText: MediaService.isPlaying ? "Pause" : "Play"
+                                    onClicked: MediaService.toggle()
+                                }
+                                MediaIconButton {
+                                    size: 26
+                                    glyph: "\u{f051}"  // fa step-forward
+                                    tooltipText: "Next"
+                                    onClicked: MediaService.next()
+                                }
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingSm
+
+                        Text {
+                            text: MediaService.format(MediaService.position)
+                            color: Theme.surfaceTextVariant
+                            font.family: Theme.fontFamily
+                            font.pointSize: Theme.labelSmall
+                        }
+
+                        // Custom seek bar — value tracks live position, but
+                        // while dragging the knob follows the cursor and the
+                        // seek fires on release.
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 16
+                            property real frac: MediaService.length > 0
+                                ? Math.max(0, Math.min(1, MediaService.position / MediaService.length))
+                                : 0
+                            property real dragFrac: -1
+                            property real shown: dragFrac >= 0 ? dragFrac : frac
+
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 4
+                                radius: Theme.radiusFull
+                                color: Theme.surfaceContainerHigh
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                            }
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 4
+                                radius: Theme.radiusFull
+                                color: Theme.tertiary
+                                width: parent.shown * parent.width
+                            }
+                            Rectangle {
+                                x: parent.shown * (parent.width - width)
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 12; height: 12; radius: Theme.radiusFull
+                                color: Theme.tertiary
+                                border.color: Theme.surfaceContainerLowest
+                                border.width: 2
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onPressed: mouse => { parent.dragFrac = Math.max(0, Math.min(1, mouse.x / width)) }
+                                onPositionChanged: mouse => { if (pressed) parent.dragFrac = Math.max(0, Math.min(1, mouse.x / width)) }
+                                onReleased: mouse => {
+                                    MediaService.seekToFraction(parent.dragFrac)
+                                    parent.dragFrac = -1
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: MediaService.format(MediaService.length)
+                            color: Theme.surfaceTextVariant
+                            font.family: Theme.fontFamily
+                            font.pointSize: Theme.labelSmall
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Theme.outlineVariant
+                    visible: MediaService.hasPlayer
+                }
+
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: Theme.spacingSm
 
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
                             text: root.muted ? "\u{f0581} " : (root.volume < 33 ? "\u{f057f} " : (root.volume < 66 ? "\u{f0580} " : "\u{f057e} "))
-                            color: "#fab387"
+                            color: Theme.secondary
                             font.family: Theme.fontFamily
-                            font.pointSize: 10
+                            font.pointSize: Theme.titleSmall
                         }
                         Text {
-                            text: "Volume"
-                            color: "#c8d2e0"
-                            font.family: Theme.fontFamily
-                            font.pointSize: 8
+                            text: "Volume"; color: Theme.surfaceText
+                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
                             Layout.fillWidth: true
                         }
                         Text {
                             text: root.muted ? "muted" : (root.volume + "%")
-                            color: "#fab387"
-                            font.family: Theme.fontFamily
-                            font.pointSize: 8
+                            color: Theme.secondary; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
                         }
-                        // Mute toggle
                         Rectangle {
-                            implicitWidth: 24; implicitHeight: 18; radius: 3
-                            color: root.muted ? "#55fab387" : "transparent"
-                            border.color: "#55fab387"; border.width: 1
+                            implicitWidth: 24; implicitHeight: 20; radius: Theme.radiusSm
+                            color: root.muted ? Theme.withAlpha(Theme.secondary, 0.2) : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: root.muted ? "\u{f0581}" : "\u{f057e}"
-                                color: "#fab387"
+                                color: Theme.secondary
                                 font.family: Theme.fontFamily
-                                font.pointSize: 9
+                                font.pointSize: Theme.labelLarge
                             }
                             MouseArea {
                                 anchors.fill: parent
@@ -172,11 +328,10 @@ PopupWindow {
                         }
                     }
 
-                    // Volume slider
                     SliderBar {
                         Layout.fillWidth: true
                         value: root.muted ? 0 : root.volume
-                        accentColor: "#fab387"
+                        accentColor: Theme.secondary
                         onMoved: v => {
                             root.volume = v
                             Quickshell.execDetached(["wpctl", "set-volume", "-l", "1.0",
@@ -185,38 +340,25 @@ PopupWindow {
                     }
                 }
 
-                // Brightness
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: Theme.spacingSm
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Text { text: "󰃞"; color: Theme.warning; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall }
                         Text {
-                            text: "󰃞"
-                            color: "#ffcc00"
-                            font.family: Theme.fontFamily
-                            font.pointSize: 10
-                        }
-                        Text {
-                            text: "Brightness"
-                            color: "#c8d2e0"
-                            font.family: Theme.fontFamily
-                            font.pointSize: 8
+                            text: "Brightness"; color: Theme.surfaceText
+                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
                             Layout.fillWidth: true
                         }
-                        Text {
-                            text: root.brightness + "%"
-                            color: "#ffcc00"
-                            font.family: Theme.fontFamily
-                            font.pointSize: 8
-                        }
+                        Text { text: root.brightness + "%"; color: Theme.warning; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
                     }
 
                     SliderBar {
                         Layout.fillWidth: true
                         value: root.brightness
-                        accentColor: "#ffcc00"
+                        accentColor: Theme.warning
                         onMoved: v => {
                             root.brightness = v
                             Quickshell.execDetached(["brightnessctl", "set", v + "%"])
@@ -224,13 +366,11 @@ PopupWindow {
                     }
                 }
 
-                // Divider
-                Rectangle { Layout.fillWidth: true; height: 1; color: "#1a5bcefa" }
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
 
-                // Quick action buttons
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: Theme.spacingMd
 
                     Repeater {
                         model: [
@@ -242,37 +382,18 @@ PopupWindow {
                         delegate: Rectangle {
                             required property var modelData
                             Layout.fillWidth: true
-                            implicitHeight: 44
-                            radius: 4
-                            color: btnMa.containsMouse ? "#1a5bcefa" : "#0d1e1e28"
-                            border.color: "#1a5bcefa"
-                            border.width: 1
+                            implicitHeight: 48
+                            radius: Theme.radiusMd
+                            color: btnMa.containsMouse ? Theme.withAlpha(Theme.primary, 0.14) : Theme.surfaceContainerHigh
 
                             ColumnLayout {
                                 anchors.centerIn: parent
-                                spacing: 3
-                                Text {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: modelData.icon
-                                    color: "#c8d2e0"
-                                    font.family: Theme.fontFamily
-                                    font.pointSize: 12
-                                }
-                                Text {
-                                    Layout.alignment: Qt.AlignHCenter
-                                    text: modelData.label
-                                    color: "#7984a4"
-                                    font.family: Theme.fontFamily
-                                    font.pointSize: 6
-                                }
+                                spacing: Theme.spacingXs
+                                Text { Layout.alignment: Qt.AlignHCenter; text: modelData.icon; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium }
+                                Text { Layout.alignment: Qt.AlignHCenter; text: modelData.label; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
                             }
 
-                            MouseArea {
-                                id: btnMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: Quickshell.execDetached(modelData.cmd)
-                            }
+                            MouseArea { id: btnMa; anchors.fill: parent; hoverEnabled: true; onClicked: Quickshell.execDetached(modelData.cmd) }
                         }
                     }
                 }
@@ -283,7 +404,7 @@ PopupWindow {
                 id: settingsView
                 Layout.fillWidth: true
                 visible: root.showSettings
-                spacing: 12
+                spacing: Theme.spacingMd
 
                 function toggleSetting(key) {
                     if (key === "workspaces") SettingsService.showWorkspaces = !SettingsService.showWorkspaces
@@ -295,168 +416,77 @@ PopupWindow {
                     else if (key === "battery") SettingsService.showBattery = !SettingsService.showBattery
                     else if (key === "network") SettingsService.showNetwork = !SettingsService.showNetwork
                     else if (key === "media") SettingsService.showMedia = !SettingsService.showMedia
+                    else if (key === "stats") SettingsService.showStats = !SettingsService.showStats
                 }
 
-                // Header 1: Module Visibility
-                Text {
-                    text: "MODULE VISIBILITY"
-                    color: "#7984a4"
-                    font.family: Theme.fontFamily
-                    font.pointSize: 7
-                    font.bold: true
-                }
-
-                // Grid of modules
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-
-                    Repeater {
-                        model: [
-                            { key: "workspaces", name: "Workspaces", icon: "󰮯" },
-                            { key: "weather", name: "Weather", icon: "󰖐" },
-                            { key: "temp", name: "Temperature", icon: "󰔏" },
-                            { key: "storage", name: "Storage", icon: "󰋊" },
-                            { key: "memory", name: "Memory", icon: "󰍛" },
-                            { key: "cpu", name: "CPU Info", icon: "󰻠" },
-                            { key: "battery", name: "Battery Info", icon: "󰁹", suffix: SettingsService.hasBattery ? " (Detected)" : " (No Battery)" },
-                            { key: "network", name: "Network Info", icon: "󰖩" },
-                            { key: "media", name: "Media Player", icon: "󰝚" }
-                        ]
-
-                        delegate: RowLayout {
-                            id: rowItem
-                            required property var modelData
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            readonly property bool active: {
-                                if (modelData.key === "workspaces") return SettingsService.showWorkspaces
-                                if (modelData.key === "weather") return SettingsService.showWeather
-                                if (modelData.key === "temp") return SettingsService.showTemp
-                                if (modelData.key === "storage") return SettingsService.showStorage
-                                if (modelData.key === "memory") return SettingsService.showMemory
-                                if (modelData.key === "cpu") return SettingsService.showCpu
-                                if (modelData.key === "battery") return SettingsService.showBattery
-                                if (modelData.key === "network") return SettingsService.showNetwork
-                                if (modelData.key === "media") return SettingsService.showMedia
-                                return true
-                            }
-
-                            Text {
-                                text: modelData.icon
-                                color: rowItem.active ? "#0df0ff" : "#7984a4"
-                                font.family: Theme.fontFamily
-                                font.pointSize: 10
-                                Layout.preferredWidth: 16
-                            }
-
-                            Text {
-                                text: modelData.name + (modelData.suffix !== undefined ? modelData.suffix : "")
-                                color: rowItem.active ? "#d8e0f0" : "#7984a4"
-                                font.family: Theme.fontFamily
-                                font.pointSize: 8
-                                Layout.fillWidth: true
-                            }
-
-                            // Custom switch toggle
-                            Rectangle {
-                                width: 28; height: 14; radius: 7
-                                color: rowItem.active ? "#330df0ff" : "transparent"
-                                border.color: rowItem.active ? "#0df0ff" : "#557984a4"
-                                border.width: 1
-
-                                Rectangle {
-                                    width: 10; height: 10; radius: 5
-                                    x: rowItem.active ? 15 : 3
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: rowItem.active ? "#0df0ff" : "#7984a4"
-                                    Behavior on x { NumberAnimation { duration: 120 } }
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: settingsView.toggleSetting(modelData.key)
-                            }
-                        }
-                    }
-                }
-
-                // Divider
-                Rectangle { Layout.fillWidth: true; height: 1; color: "#1a5bcefa" }
-
-                // Header 2: Wallpaper Scanning
-                Text {
-                    text: "WALLPAPERS SOURCE"
-                    color: "#7984a4"
-                    font.family: Theme.fontFamily
-                    font.pointSize: 7
-                    font.bold: true
-                }
+                Text { text: "MODULE VISIBILITY"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: Theme.spacingSm
 
-                    Text {
-                        text: "Directory to scan:"
-                        color: "#c8d2e0"
-                        font.family: Theme.fontFamily
-                        font.pointSize: 7
-                    }
+                    // Drag-and-drop bar layout editor (click chips to toggle visibility)
+                    BarLayoutEditor { Layout.fillWidth: true }
+                }
+
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
+
+                Text { text: "THEME"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                Text { text: "Active: " + Theme.prettyName(SettingsService.theme); color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
+
+                ThemePicker { Layout.fillWidth: true }
+
+                Text { text: "WALLPAPERS SOURCE"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacingSm
+
+                    Text { text: "Directory to scan:"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
 
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 24
-                        radius: 4
-                        color: "#0d1e1e28"
-                        border.color: "#1a5bcefa"
-                        border.width: 1
+                        height: 28
+                        radius: Theme.radiusSm
+                        color: Theme.surfaceContainerLow
 
                         TextInput {
                             id: dirInput
-                            anchors { fill: parent; leftMargin: 8; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd; verticalCenter: parent.verticalCenter }
                             text: SettingsService.wallpaperDir
-                            color: "#d8e0f0"
+                            color: Theme.surfaceText
                             font.family: Theme.fontFamily
-                            font.pointSize: 8
+                            font.pointSize: Theme.labelLarge
                             selectByMouse: true
                             verticalAlignment: TextInput.AlignVCenter
                             onTextEdited: SettingsService.wallpaperDir = text
                         }
                     }
 
-                    RowLayout {
+                    Rectangle {
                         Layout.fillWidth: true
-                        spacing: 8
+                        height: 30
+                        radius: Theme.radiusSm
+                        color: scanMa.containsMouse ? Theme.withAlpha(Theme.primary, 0.2) : Theme.withAlpha(Theme.primary, 0.12)
 
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 26
-                            radius: 4
-                            color: scanMa.containsMouse ? "#1a5bcefa" : "#0d1e1e28"
-                            border.color: "#0df0ff"
-                            border.width: 1
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰚔  Scan & Update list"
+                            color: Theme.primary
+                            font.family: Theme.fontFamily
+                            font.pointSize: Theme.labelLarge
+                            font.bold: true
+                        }
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "󰚔  Scan & Update list"
-                                color: "#0df0ff"
-                                font.family: Theme.fontFamily
-                                font.pointSize: 8
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                id: scanMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    scanStatusText.text = "Scanning..."
-                                    scanStatusText.color = "#c8d2e0"
-                                    SettingsService.scanWallpapers()
-                                }
+                        MouseArea {
+                            id: scanMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                scanStatusText.text = "Scanning..."
+                                scanStatusText.color = Theme.surfaceText
+                                SettingsService.scanWallpapers()
                             }
                         }
                     }
@@ -466,16 +496,16 @@ PopupWindow {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         text: ""
-                        color: "#7984a4"
+                        color: Theme.surfaceTextVariant
                         font.family: Theme.fontFamily
-                        font.pointSize: 7
+                        font.pointSize: Theme.labelLarge
                     }
 
                     Connections {
                         target: SettingsService
                         function onScanFinished(success, message) {
                             scanStatusText.text = message
-                            scanStatusText.color = success ? "#00ff9d" : "#ff416c"
+                            scanStatusText.color = success ? Theme.success : Theme.error
                         }
                     }
                 }

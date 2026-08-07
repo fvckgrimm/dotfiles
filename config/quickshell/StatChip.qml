@@ -2,58 +2,50 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Generic info chip: icon + value text, with optional left accent border
+// Generic info chip: icon + value text. Flat by default — a subtle hover
+// tint is the only surface change, so the bar doesn't read as a strip of
+// separately-boxed modules.
 Rectangle {
     id: root
-
     property string icon: ""
     property string value: "—"
-    property string iconColor: "#e5e5e5"
-    property string valueColor: "#e5e5e5"
+    property string iconColor: Theme.surfaceText
+    property string valueColor: Theme.surfaceText
+    // Deprecated — kept so existing call sites don't break, no longer rendered.
     property string accentColor: "transparent"
     property string tooltipText: ""
-    property string bgColor: "#661e1e28"
+    property string bgColor: "transparent"
 
     signal clicked()
     signal rightClicked()
     signal wheel(var wheel)
 
-    implicitHeight: 22
-    implicitWidth: row.implicitWidth + 20
-    radius: 2
-    color: hovered ? "#991e1e28" : bgColor
-    border.color: "transparent"
-
     property bool hovered: ma.containsMouse
 
-    Behavior on color { ColorAnimation { duration: 150 } }
-
-    // left accent line
-    Rectangle {
-        visible: root.accentColor !== "transparent"
-        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-        width: 1
-        color: root.accentColor
-        radius: 1
-    }
+    implicitHeight: 26
+    implicitWidth: row.implicitWidth + Theme.spacingLg * 2
+    radius: Theme.radiusMd
+    color: hovered ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : bgColor
+    border.width: 0
+    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
 
     RowLayout {
         id: row
         anchors.centerIn: parent
-        spacing: 5
+        spacing: Theme.spacingSm
 
         Text {
             text: root.icon
             color: root.iconColor
-            font.family: "JetBrainsMono Nerd Font"
-            font.pointSize: 9
+            font.family: Theme.fontFamily
+            font.pointSize: Theme.titleSmall
             font.bold: true
         }
         Text {
             text: root.value
             color: root.valueColor
-            font.family: "JetBrainsMono Nerd Font"
-            font.pointSize: 8
+            font.family: Theme.fontFamily
+            font.pointSize: Theme.bodyMedium
             font.bold: true
         }
     }
@@ -75,15 +67,16 @@ Rectangle {
         text: root.tooltipText
         delay: 600
         background: Rectangle {
-            color: "#d90d1117"
-            border.color: "#335bcefa"
-            radius: 4
+            color: Theme.cardColor()
+            border.color: Theme.cardBorder()
+            border.width: 1
+            radius: Theme.radiusSm
         }
         contentItem: Text {
             text: root.tooltipText
-            color: "#d8e0f0"
-            font.family: "JetBrainsMono Nerd Font"
-            font.pointSize: 8
+            color: Theme.surfaceText
+            font.family: Theme.fontFamily
+            font.pointSize: Theme.labelLarge
         }
     }
 }

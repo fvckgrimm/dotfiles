@@ -4,12 +4,10 @@ import QtQuick
 import QtQuick.Layouts
 
 // TodoWidget — full-screen overlay panel, same pattern as LauncherPopup.
-// Instantiated in Bar.qml (one per screen). Keyboard focus works properly.
 PanelWindow {
     id: root
 
     required property var barWindow
-
     visible: false
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -23,9 +21,13 @@ PanelWindow {
     color: "transparent"
     screen: barWindow ? barWindow.screen : undefined
 
-    // ── State ─────────────────────────────────────────────────────────────────
     property string viewDate: TodoService.today
     property string inputText: ""
+    property string inputTime: ""
+    property int    inputRemind: 5
+    property bool   inputTimeOpen: false
+    property int    inputHour: 9
+    property int    inputMin: 0
 
     readonly property bool isToday: viewDate === TodoService.today
     readonly property var  dayList: TodoService.dayTodos(viewDate)
@@ -35,6 +37,10 @@ PanelWindow {
         l.sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
             if (a.done   !== b.done)   return a.done   ?  1 : -1
+            // Sort by time if both have time
+            if (a.time && b.time) return a.time.localeCompare(b.time)
+            if (a.time) return -1
+            if (b.time) return 1
             return 0
         })
         return l
@@ -44,16 +50,31 @@ PanelWindow {
     readonly property int pendingCount: dayList.filter(t => !t.done).length
 
     function open() {
-        viewDate  = TodoService.today
-        inputText = ""
-        visible   = true
+        viewDate   = TodoService.today
+        inputText  = ""
+        inputTime  = ""
+        inputRemind = 5
+        inputTimeOpen = false
+        visible    = true
         Qt.callLater(() => todoInput.forceActiveFocus())
     }
 
-    function close() {
-        visible = false
-        TodoService.open = false
+    function toggleInputTime() {
+        root.inputTimeOpen = !root.inputTimeOpen
+        if (root.inputTimeOpen) {
+            if (root.inputTime !== "") {
+                var p = root.inputTime.split(":")
+                root.inputHour = parseInt(p[0]) || 0
+                root.inputMin  = parseInt(p[1]) || 0
+            } else {
+                var now = new Date()
+                root.inputHour = now.getHours()
+                root.inputMin  = now.getMinutes()
+            }
+        }
     }
+
+    function close() { visible = false; TodoService.open = false }
 
     function prevDay() {
         var d = new Date(viewDate + "T12:00:00")
@@ -89,58 +110,39 @@ PanelWindow {
         }
     }
 
-    onVisibleChanged: {
-        if (_ready && !visible) TodoService.open = false
-    }
+    onVisibleChanged: { if (_ready && !visible) TodoService.open = false }
 
-    // ── Full-screen dim backdrop ──────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        color: "#aa000000"
+        color: Theme.withAlpha("#000000", 0.55)
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.close()
-        }
+        MouseArea { anchors.fill: parent; onClicked: root.close() }
 
-        // ── Centered card ─────────────────────────────────────────────────────
         Rectangle {
             id: card
             anchors.centerIn: parent
-            width:  400
-            height: Math.min(cardCol.implicitHeight + 28, 620)
-            radius: 10
-            color:  "#f2110e18"
-            border.color: "#40c8a063"
+            width:  440
+            height: Math.min(cardCol.implicitHeight + Theme.spacingXl * 2, 650)
+            radius: Theme.radiusXl
+            color:  Theme.cardColor()
+            border.color: Theme.cardBorder()
             border.width: 1
 
-            // Warm top glow line
-            Rectangle {
-                anchors { top: parent.top; left: parent.left; right: parent.right }
-                height: 1; radius: 1
-                color: "#55e8b86a"
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {}
-            }
+            MouseArea { anchors.fill: parent; onClicked: {} }
 
             ColumnLayout {
                 id: cardCol
-                anchors { fill: parent; margins: 16 }
-                spacing: 10
+                anchors { fill: parent; margins: Theme.spacingXl }
+                spacing: Theme.spacingMd
 
-                // ── Header ────────────────────────────────────────────────────
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: Theme.spacingSm
 
                     Rectangle {
-                        width: 22; height: 22; radius: 3
-                        color: prevMa.containsMouse ? "#22e8b86a" : "transparent"
-                        border.color: "#33e8b86a"; border.width: 1
-                        Text { anchors.centerIn: parent; text: "‹"; color: "#e8b86a"; font.pointSize: 11; font.bold: true }
+                        width: 24; height: 24; radius: Theme.radiusSm
+                        color: prevMa.containsMouse ? Theme.withAlpha(Theme.secondary, 0.16) : "transparent"
+                        Text { anchors.centerIn: parent; text: "‹"; color: Theme.secondary; font.pointSize: Theme.titleMedium; font.bold: true }
                         MouseArea { id: prevMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.prevDay() }
                     }
 
@@ -150,73 +152,67 @@ PanelWindow {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.friendlyDate(root.viewDate)
-                            color: root.isToday ? "#e8b86a" : "#9aa5c4"
+                            color: root.isToday ? Theme.secondary : Theme.surfaceTextVariant
                             font.family: Theme.fontFamily
-                            font.pointSize: 10
+                            font.pointSize: Theme.bodyLarge
                             font.bold: true
                         }
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.viewDate
-                            color: "#444d62"
+                            color: Theme.surfaceTextDim
                             font.family: Theme.fontFamily
-                            font.pointSize: 6
+                            font.pointSize: Theme.labelSmall
                             visible: !root.isToday
                         }
                     }
 
                     Rectangle {
-                        width: 22; height: 22; radius: 3
-                        opacity: root.isToday ? 0.2 : 1.0
-                        color: nextMa.containsMouse && !root.isToday ? "#22e8b86a" : "transparent"
-                        border.color: "#33e8b86a"; border.width: 1
-                        Text { anchors.centerIn: parent; text: "›"; color: "#e8b86a"; font.pointSize: 11; font.bold: true }
+                        width: 24; height: 24; radius: Theme.radiusSm
+                        opacity: root.isToday ? 0.25 : 1.0
+                        color: nextMa.containsMouse && !root.isToday ? Theme.withAlpha(Theme.secondary, 0.16) : "transparent"
+                        Text { anchors.centerIn: parent; text: "›"; color: Theme.secondary; font.pointSize: Theme.titleMedium; font.bold: true }
                         MouseArea { id: nextMa; anchors.fill: parent; hoverEnabled: true; onClicked: if (!root.isToday) root.nextDay() }
                     }
 
                     Rectangle {
                         visible: !root.isToday
-                        implicitWidth: todayLbl.implicitWidth + 12; implicitHeight: 22
-                        radius: 3
-                        color: todayMa.containsMouse ? "#22e8b86a" : "transparent"
-                        border.color: "#33e8b86a"; border.width: 1
-                        Text { id: todayLbl; anchors.centerIn: parent; text: "↩ today"; color: "#e8b86a"; font.family: Theme.fontFamily; font.pointSize: 6 }
+                        implicitWidth: todayLbl.implicitWidth + Theme.spacingMd; implicitHeight: 24
+                        radius: Theme.radiusSm
+                        color: todayMa.containsMouse ? Theme.withAlpha(Theme.secondary, 0.16) : "transparent"
+                        Text { id: todayLbl; anchors.centerIn: parent; text: "↩ today"; color: Theme.secondary; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
                         MouseArea { id: todayMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.viewDate = TodoService.today }
                     }
 
                     Rectangle {
                         visible: root.doneCount > 0
-                        implicitWidth: clearLbl.implicitWidth + 12; implicitHeight: 22
-                        radius: 3
-                        color: clearMa.containsMouse ? "#22ff416c" : "transparent"
-                        border.color: "#33ff416c"; border.width: 1
-                        Text { id: clearLbl; anchors.centerIn: parent; text: "clear done"; color: "#ff416c"; font.family: Theme.fontFamily; font.pointSize: 6 }
+                        implicitWidth: clearLbl.implicitWidth + Theme.spacingMd; implicitHeight: 24
+                        radius: Theme.radiusSm
+                        color: clearMa.containsMouse ? Theme.withAlpha(Theme.error, 0.16) : "transparent"
+                        Text { id: clearLbl; anchors.centerIn: parent; text: "clear done"; color: Theme.error; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
                         MouseArea { id: clearMa; anchors.fill: parent; hoverEnabled: true; onClicked: TodoService.clearDone(root.viewDate) }
                     }
 
                     Text {
-                        text: "✕"; color: "#7984a4"; font.pointSize: 10
+                        text: "✕"; color: Theme.surfaceTextVariant; font.pointSize: Theme.titleSmall
                         MouseArea { anchors.fill: parent; onClicked: root.close() }
                     }
                 }
 
-                // ── Progress bar ──────────────────────────────────────────────
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: 16
                     visible: root.dayList.length > 0
 
                     Rectangle {
-                        anchors { left: parent.left; right: countLbl.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                        height: 4; radius: 2
-                        color: "#1ae8b86a"
-
+                        anchors { left: parent.left; right: countLbl.left; rightMargin: Theme.spacingSm; verticalCenter: parent.verticalCenter }
+                        height: 4; radius: Theme.radiusFull
+                        color: Theme.surfaceContainerHigh
                         Rectangle {
-                            width: root.dayList.length > 0
-                                ? parent.width * (root.doneCount / root.dayList.length) : 0
-                            height: parent.height; radius: 2
-                            color: "#e8b86a"
-                            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                            width: root.dayList.length > 0 ? parent.width * (root.doneCount / root.dayList.length) : 0
+                            height: parent.height; radius: Theme.radiusFull
+                            color: Theme.secondary
+                            Behavior on width { NumberAnimation { duration: Theme.motionSlow; easing.type: Theme.easingStandard } }
                         }
                     }
 
@@ -224,31 +220,40 @@ PanelWindow {
                         id: countLbl
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         text: root.doneCount + "/" + root.dayList.length
-                        color: "#555e7a"; font.family: Theme.fontFamily; font.pointSize: 6
+                        color: Theme.surfaceTextDim; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall
                     }
                 }
 
-                // ── Divider ───────────────────────────────────────────────────
-                Rectangle {
-                    Layout.fillWidth: true; height: 1
-                    color: "#1ae8b86a"
-                }
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
 
-                // ── Input (today only) ────────────────────────────────────────
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 36
-                    radius: 5
+                    implicitHeight: 38
+                    radius: Theme.radiusMd
                     visible: root.isToday
-                    color: todoInput.activeFocus ? "#1ae8b86a" : "#0ae8b86a"
-                    border.color: todoInput.activeFocus ? "#55e8b86a" : "#22e8b86a"
-                    border.width: 1
+                    color: Theme.surfaceContainerLow
 
                     RowLayout {
-                        anchors { fill: parent; leftMargin: 12; rightMargin: 10 }
-                        spacing: 8
+                        anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingSm }
+                        spacing: Theme.spacingSm
 
-                        Text { text: "+"; color: "#e8b86a"; font.pointSize: 12; font.bold: true }
+                        Text { text: "+"; color: Theme.secondary; font.pointSize: Theme.titleMedium; font.bold: true }
+
+                        Rectangle {
+                            width: 24; height: 24; radius: Theme.radiusSm
+                            color: (inputTimeMa.containsMouse || root.inputTimeOpen) ? Theme.withAlpha(Theme.secondary, 0.16) : "transparent"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰥔"
+                                color: root.inputTime !== "" ? Theme.secondary : Theme.surfaceTextVariant
+                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                            }
+                            MouseArea {
+                                id: inputTimeMa
+                                anchors.fill: parent; hoverEnabled: true
+                                onClicked: root.toggleInputTime()
+                            }
+                        }
 
                         Item {
                             Layout.fillWidth: true
@@ -257,19 +262,19 @@ PanelWindow {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "add a task…"
-                                color: "#444d62"
+                                color: Theme.surfaceTextDim
                                 font.family: Theme.fontFamily
-                                font.pointSize: 9
+                                font.pointSize: Theme.bodyMedium
                                 visible: todoInput.text === ""
                             }
 
                             TextInput {
                                 id: todoInput
                                 anchors.fill: parent
-                                color: "#d8e0f0"
+                                color: Theme.surfaceText
                                 font.family: Theme.fontFamily
-                                font.pointSize: 9
-                                selectionColor: "#33e8b86a"
+                                font.pointSize: Theme.bodyMedium
+                                selectionColor: Theme.withAlpha(Theme.secondary, 0.2)
                                 focus: true
                                 text: root.inputText
                                 onTextChanged: root.inputText = text
@@ -278,8 +283,10 @@ PanelWindow {
                                     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                         var t = root.inputText.trim()
                                         if (t !== "") {
-                                            TodoService.addTodo(t)
+                                            TodoService.addTodo(t, undefined, root.inputTime, root.inputRemind)
                                             root.inputText = ""
+                                            root.inputTime = ""
+                                            root.inputRemind = 5
                                             text = ""
                                         }
                                         event.accepted = true
@@ -291,14 +298,80 @@ PanelWindow {
                             }
                         }
 
-                        Text {
-                            visible: root.inputText.trim() !== ""
-                            text: "↵"; color: "#e8b86a"; font.pointSize: 9; opacity: 0.7
+                        Rectangle {
+                            visible: root.inputTime !== ""
+                            implicitWidth: inputTimeBadge.implicitWidth + Theme.spacingMd
+                            implicitHeight: 20
+                            radius: Theme.radiusFull
+                            color: Theme.withAlpha(Theme.secondary, 0.16)
+                            Text {
+                                id: inputTimeBadge
+                                anchors.centerIn: parent
+                                text: "󰥔 " + root.inputTime + (root.inputRemind > 0 ? "  󰂢 " + root.inputRemind + "m" : "")
+                                color: Theme.secondary
+                                font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall; font.bold: true
+                            }
+                        }
+
+                        Text { visible: root.inputText.trim() !== ""; text: "↵"; color: Theme.secondary; font.pointSize: Theme.bodyMedium; opacity: 0.7 }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: Theme.spacingXs
+                    visible: root.inputTimeOpen
+                    spacing: Theme.spacingXs
+
+                    Rectangle {
+                        implicitHeight: 24
+                        implicitWidth: inputEditorCol.implicitWidth
+                        radius: Theme.radiusSm
+                        color: Theme.surfaceContainerHigh
+
+                        RowLayout {
+                            id: inputEditorCol
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.spacingSm
+                            anchors.rightMargin: Theme.spacingXs
+                            spacing: Theme.spacingXs
+
+                            Text { text: "󰥔"; color: Theme.primary; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
+                            TimeSpinner { width: 44; value: root.inputHour; min: 0; max: 23; onValueChanged: root.inputHour = value }
+                            Text { text: ":"; color: Theme.surfaceTextVariant; font.pointSize: Theme.titleMedium; font.bold: true }
+                            TimeSpinner { width: 44; value: root.inputMin; min: 0; max: 59; step: 5; onValueChanged: root.inputMin = value }
+                            Text { text: "󰂢"; color: Theme.secondary; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
+                            TimeSpinner { width: 44; value: root.inputRemind; min: 0; max: 180; step: 5; onValueChanged: root.inputRemind = value }
+                            Text { text: "min before"; color: Theme.surfaceTextDim; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        text: "✓"
+                        color: inputApplyMa.containsMouse ? Theme.secondary : Theme.surfaceTextVariant
+                        font.pointSize: Theme.titleMedium; font.bold: true
+                        MouseArea {
+                            id: inputApplyMa; anchors.fill: parent; hoverEnabled: true
+                            onClicked: {
+                                root.inputTime = String(root.inputHour).padStart(2, "0") + ":" + String(root.inputMin).padStart(2, "0")
+                                root.inputTimeOpen = false
+                                Qt.callLater(() => todoInput.forceActiveFocus())
+                            }
+                        }
+                    }
+                    Text {
+                        text: "✕"
+                        color: inputCancelMa.containsMouse ? Theme.surfaceText : Theme.surfaceTextDim
+                        font.pointSize: Theme.titleMedium
+                        MouseArea {
+                            id: inputCancelMa; anchors.fill: parent; hoverEnabled: true
+                            onClicked: root.inputTimeOpen = false
                         }
                     }
                 }
 
-                // ── Empty state ───────────────────────────────────────────────
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: 52
@@ -306,22 +379,21 @@ PanelWindow {
 
                     ColumnLayout {
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: Theme.spacingXs
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.isToday ? "󰄲  nothing yet" : "󰄲  no tasks"
-                            color: "#444d62"; font.family: Theme.fontFamily; font.pointSize: 9
+                            color: Theme.surfaceTextDim; font.family: Theme.fontFamily; font.pointSize: Theme.bodyMedium
                         }
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.isToday ? "type above and hit enter" : ""
-                            color: "#333a4d"; font.family: Theme.fontFamily; font.pointSize: 7
+                            color: Theme.surfaceTextDim; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
                             visible: root.isToday
                         }
                     }
                 }
 
-                // ── Todo list ─────────────────────────────────────────────────
                 Flickable {
                     id: flick
                     Layout.fillWidth: true
@@ -333,11 +405,10 @@ PanelWindow {
                     ColumnLayout {
                         id: todoCol
                         width: flick.width
-                        spacing: 4
+                        spacing: Theme.spacingXs
 
                         Repeater {
                             model: root.sortedList
-
                             delegate: TodoRow {
                                 required property var modelData
                                 required property int index
@@ -350,18 +421,14 @@ PanelWindow {
                     }
                 }
 
-                // ── Footer hint ───────────────────────────────────────────────
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     text: root.isToday
-                        ? (root.pendingCount > 0
-                            ? root.pendingCount + " remaining  ·  esc close"
-                            : "all done  ✓  ·  esc close")
+                        ? (root.pendingCount > 0 ? root.pendingCount + " remaining  ·  esc close" : "all done  ✓  ·  esc close")
                         : (root.dayList.length + " task" + (root.dayList.length !== 1 ? "s" : "") + "  ·  esc close")
-                    color: (root.isToday && root.pendingCount === 0 && root.dayList.length > 0)
-                        ? "#e8b86a" : "#444d62"
+                    color: (root.isToday && root.pendingCount === 0 && root.dayList.length > 0) ? Theme.secondary : Theme.surfaceTextDim
                     font.family: Theme.fontFamily
-                    font.pointSize: 6
+                    font.pointSize: Theme.labelSmall
                 }
             }
         }

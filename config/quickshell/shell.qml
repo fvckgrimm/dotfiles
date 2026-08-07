@@ -2,18 +2,15 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
-
 ShellRoot {
     Process {
         command: ["bash", "-c", "pkill -x dunst; pkill -x mako; pkill -x swaync; pkill -x fnott; true"]
         running: true
     }
-
     IpcHandler {
         target: "wallpaper"
         function toggle() { WallpaperService.toggle() }
     }
-
     // qs ipc call launcher show
     // qs ipc call launcher toggle
     // qs ipc call launcher showMode "apps"   (also: calc, clip, emoji, words)
@@ -27,13 +24,34 @@ ShellRoot {
         function calc()      { LauncherService.showMode("calc") }
         function words()     { LauncherService.showMode("words") }
     }
-
     // qs ipc call todo toggle
     IpcHandler {
         target: "todo"
         function toggle() { TodoService.toggle() }
     }
-
+    // qs ipc call notifications toggle
+    IpcHandler {
+        target: "notifications"
+        function toggle() { IpcBridge.toggleNotifCenter() }
+    }
+    // qs ipc call calendar toggle
+    IpcHandler {
+        target: "calendar"
+        function toggle() { IpcBridge.toggleCalendar() }
+    }
+    // qs ipc call controlcenter toggle
+    IpcHandler {
+        target: "controlcenter"
+        function toggle() { IpcBridge.toggleControlCenter() }
+    }
+    // qs ipc call theme set "catppuccin-mocha"  (or: default, catppuccin-macchiato,
+    //   catppuccin-frappe, catppuccin-latte, dracula, rosepine)
+    // qs ipc call theme cycle
+    IpcHandler {
+        target: "theme"
+        function set(name: string) { SettingsService.theme = name }
+        function cycle()            { SettingsService.cycleTheme() }
+    }
     Variants {
         model: Quickshell.screens
         Bar {
@@ -41,7 +59,6 @@ ShellRoot {
             screen: modelData
         }
     }
-
     // LauncherPopup is a PanelWindow — needs to be top-level, not a Bar child.
     Variants {
         model: Quickshell.screens
@@ -51,7 +68,6 @@ ShellRoot {
             screen: modelData
         }
     }
-
     // TodoWidget is also a PanelWindow overlay — top-level, one per screen.
     Variants {
         model: Quickshell.screens

@@ -1,0 +1,49 @@
+{
+  "showBattery": false,
+  "showCpu": false,
+  "showMemory": false,
+  "showStorage": true,
+  "showTemp": false,
+  "showNetwork": true,
+  "showMedia": true,
+  "showWeather": true,
+  "showWorkspaces": true,
+  "showStats": true,
+  "showGlanceCpu": true,
+  "showGlanceMemory": true,
+  "showGlanceStorage": true,
+  "showGlanceTemp": true,
+  "showGlanceBattery": true,
+  "showGlanceNetwork": true,
+  "wallpaperDir": "~/Pictures/wallpapers",
+  "dashboardPosition": "right",
+  "theme": "catppuccin-mocha",
+  "barLayout": {
+    "left": [
+      "launcher",
+      "wallpaper",
+      "workspaces",
+      "weather",
+      "temp",
+      "media"
+    ],
+    "center": [
+      "clock"
+    ],
+    "right": [
+      "storage",
+      "stats",
+      "memory",
+      "cpu",
+      "battery",
+      "audio",
+      "network",
+      "controlcenter",
+      "todo",
+      "notifications",
+      "screenshot",
+      "power",
+      "tray"
+    ]
+  }
+}
