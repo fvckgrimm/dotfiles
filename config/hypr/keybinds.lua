@@ -29,7 +29,8 @@ end)
 
 -- MISC
 hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd("wlogout"))
-hl.bind("SUPER + T", hl.dsp.exec_cmd("thunar"))
+hl.bind("SUPER + T", hl.dsp.exec_cmd("nautilus"))
+--hl.bind("SUPER + T", hl.dsp.exec_cmd("thunar"))
 hl.bind("SUPER + return", hl.dsp.exec_cmd("wezterm"))
 hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd(colorpicker))
 hl.bind("SUPER + SHIFT + A", hl.dsp.exec_cmd("jerry"))
@@ -42,6 +43,8 @@ hl.bind("SUPER + CTRL + W", hl.dsp.exec_cmd("qs ipc call launcher words"))
 hl.bind("SUPER + period", hl.dsp.exec_cmd("qs ipc call launcher emoji"))
 hl.bind("SUPER + BACKSLASH", hl.dsp.exec_cmd("qs ipc call launcher calc"))
 hl.bind("SUPER + N", hl.dsp.exec_cmd("qs ipc call todo toggle"))
+hl.bind("SUPER + SHIFT + T", hl.dsp.exec_cmd("qs ipc call theme cycle"))
+hl.bind("SUPER + CTRL + T", hl.dsp.exec_cmd("qs ipc call theme set catppuccin-mocha"))
 
 -- --- NATIVE WINDOW MANAGEMENT --- --
 hl.bind("SUPER + Q", hl.dsp.window.close())
