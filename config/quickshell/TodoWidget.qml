@@ -258,6 +258,7 @@ PanelWindow {
                         Item {
                             Layout.fillWidth: true
                             implicitHeight: todoInput.implicitHeight
+                            clip: true
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter

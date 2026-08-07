@@ -435,6 +435,7 @@ PanelWindow {
                     height: 38
                     radius: Theme.radiusMd
                     color: Theme.surfaceContainerLow
+                    clip: true
                     border.color: searchInput.activeFocus ? Theme.withAlpha(Theme.primary, 0.5) : "transparent"
                     border.width: 1
 

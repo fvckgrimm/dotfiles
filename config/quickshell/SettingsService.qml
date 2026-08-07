@@ -31,9 +31,43 @@ Scope {
     property bool showGlanceBattery: true
     property bool showGlanceNetwork: true
 
-    property string wallpaperDir: "~/Pictures/wallpapers"
+    // Wallpaper browser: `wallpaperDirs` are the "Places" browsed in the
+    // picker sidebar (stored as absolute paths); `wallpaperRecursive` holds
+    // the subset of dirs that are scanned into subfolders too; `favorites`
+    // is the curated list persisted to ~/.config/quickshell/wallpapers.txt;
+    // `wallpaperView` is the grid/list toggle preference.
+    property var wallpaperDirs: ["~/Pictures/wallpapers"]
+    property var wallpaperRecursive: []
+    property var favorites: []
+    property string wallpaperView: "grid"  // "grid" | "list"
     property string dashboardPosition: "right"  // "left", "center", "right"
     property string theme: "default"  // key into Theme.palettes (Theme.applyTheme via onThemeChanged)
+    // Wallpaper color-match theme: dynamicTheme = master switch, dynamicWallpaper
+    // remembers the last wallpaper the palette was generated from (so the theme
+    // can be re-derived at boot without re-selecting).
+    property bool   dynamicTheme: true
+    property string dynamicWallpaper: ""
+
+    // Expand a leading `~` to the real home directory (stored dirs are absolute).
+    function expandHome(p) {
+        if (p[0] !== "~") return p
+        var h = Qt.homeDir()
+        if (!h || h === "") h = "$HOME"
+        return h + p.slice(1)
+    }
+
+    function isRecursive(path) {
+        return root.wallpaperRecursive.indexOf(path) !== -1
+    }
+
+    function setRecursive(path, on) {
+        var r = root.wallpaperRecursive.slice()
+        var i = r.indexOf(path)
+        if (on && i === -1) r.push(path)
+        if (!on && i !== -1) r.splice(i, 1)
+        root.wallpaperRecursive = r
+    }
+
 
     // ── Bar layout model ────────────────────────────────────────────────────
     // Each section is an ordered list of module keys from barModuleCatalog.
@@ -152,14 +186,22 @@ Scope {
                     if (obj.showGlanceTemp !== undefined) root.showGlanceTemp = obj.showGlanceTemp;
                     if (obj.showGlanceBattery !== undefined) root.showGlanceBattery = obj.showGlanceBattery;
                     if (obj.showGlanceNetwork !== undefined) root.showGlanceNetwork = obj.showGlanceNetwork;
-                    if (obj.wallpaperDir !== undefined) root.wallpaperDir = obj.wallpaperDir;
+                    if (obj.wallpaperDirs !== undefined && obj.wallpaperDirs.length > 0) root.wallpaperDirs = obj.wallpaperDirs;
+                    else if (obj.wallpaperDir !== undefined) root.wallpaperDirs = [obj.wallpaperDir];  // migrate old key
+                    if (obj.wallpaperRecursive !== undefined && Array.isArray(obj.wallpaperRecursive)) root.wallpaperRecursive = obj.wallpaperRecursive;
+                    if (obj.wallpaperView !== undefined) root.wallpaperView = obj.wallpaperView;
                     if (obj.dashboardPosition !== undefined) root.dashboardPosition = obj.dashboardPosition;
                     if (obj.theme !== undefined) root.theme = obj.theme;
+                    if (obj.dynamicTheme !== undefined) root.dynamicTheme = obj.dynamicTheme;
+                    if (obj.dynamicWallpaper !== undefined) root.dynamicWallpaper = obj.dynamicWallpaper;
                     if (obj.barLayout && obj.barLayout.left && obj.barLayout.center && obj.barLayout.right) root.barLayout = obj.barLayout;
                 } catch (e) {
                     console.log("Error loading quickshell settings: " + e);
                 }
                 root.loadedFromConfig = true;
+                root.loadFavorites()
+                root.wallpaperDirs = root.wallpaperDirs.map(p => root.expandHome(p))
+                if (obj && obj.theme === "dynamic" && root.dynamicWallpaper) root.applyDynamicTheme(root.dynamicWallpaper)
             }
         }
     }
@@ -185,9 +227,13 @@ Scope {
             "showGlanceTemp": root.showGlanceTemp,
             "showGlanceBattery": root.showGlanceBattery,
             "showGlanceNetwork": root.showGlanceNetwork,
-            "wallpaperDir": root.wallpaperDir,
+            "wallpaperDirs": root.wallpaperDirs,
+            "wallpaperRecursive": root.wallpaperRecursive,
+            "wallpaperView": root.wallpaperView,
             "dashboardPosition": root.dashboardPosition,
             "theme": root.theme,
+            "dynamicTheme": root.dynamicTheme,
+            "dynamicWallpaper": root.dynamicWallpaper,
             "barLayout": root.barLayout
         };
         var json = JSON.stringify(obj);
@@ -202,6 +248,77 @@ Scope {
 
     Process {
         id: saveProc
+        running: false
+    }
+
+    // ── Wallpaper favorites (curated list → ~/.config/quickshell/wallpapers.txt) ──
+    function loadFavorites() {
+        favLoadProc.running = true
+    }
+
+    function saveFavorites() {
+        favSaveProc.running = false
+        var json = JSON.stringify(root.favorites)
+        favSaveProc.command = [
+            "bash", "-c",
+            "mkdir -p ~/.config/quickshell && printf '%s' " +
+            JSON.stringify(json).replace(/'/g, "'\\''") +
+            " > ~/.config/quickshell/wallpapers.txt"
+        ]
+        favSaveProc.running = true
+    }
+
+    function favorite(path) {
+        if (root.favorites.indexOf(path) === -1) {
+            var f = root.favorites.slice()
+            f.push(path)
+            root.favorites = f
+        }
+        root.saveFavorites()
+    }
+
+    function unfavorite(path) {
+        var idx = root.favorites.indexOf(path)
+        if (idx !== -1) {
+            var f = root.favorites.slice()
+            f.splice(idx, 1)
+            root.favorites = f
+        }
+        root.saveFavorites()
+    }
+
+    function isFavorite(path) {
+        return root.favorites.indexOf(path) !== -1
+    }
+
+    Process {
+        id: favLoadProc
+        command: ["bash", "-c", "cat ~/.config/quickshell/wallpapers.txt 2>/dev/null || echo '[]'"]
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                try {
+                    var arr = JSON.parse(data.trim())
+                    if (Array.isArray(arr)) {
+                        root.favorites = arr
+                        return
+                    }
+                } catch (e) { }
+                // Legacy format: one path per line (old scan cache).
+                var lines = data.trim().split("\n")
+                var out = []
+                for (var i = 0; i < lines.length; i++) {
+                    var l = lines[i].trim()
+                    if (l !== "" && l[0] !== "#") out.push(l)
+                }
+                root.favorites = out
+                root.saveFavorites()
+            }
+        }
+    }
+
+    Process {
+        id: favSaveProc
         running: false
     }
 
@@ -239,9 +356,13 @@ Scope {
     onShowGlanceTempChanged: save()
     onShowGlanceBatteryChanged: save()
     onShowGlanceNetworkChanged: save()
-    onWallpaperDirChanged: save()
+    onWallpaperDirsChanged: save()
+    onWallpaperRecursiveChanged: save()
+    onWallpaperViewChanged: save()
     onDashboardPositionChanged: save()
     onBarLayoutChanged: save()
+    onDynamicThemeChanged: save()
+    onDynamicWallpaperChanged: save()
     onThemeChanged: {
         Theme.currentTheme = root.theme
         save()
@@ -254,43 +375,40 @@ Scope {
         root.theme = names[(idx + 1) % names.length]
     }
 
-    // Scan Wallpaper Folder command
-    signal scanFinished(bool success, string message)
-
-    function scanWallpapers() {
-        scanProc.running = false;
-        // Expand ~ to $HOME
-        var dir = root.wallpaperDir.replace(/^~/, "$HOME");
-        // We will find png, jpg, jpeg, webp, gif files, and write them to ~/.config/quickshell/wallpapers.txt
-        var script = "mkdir -p ~/.config/quickshell && find \"" + dir + "\" -type f \\( -iname \"*.png\" -o -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.webp\" -o -iname \"*.gif\" \\) | sort > ~/.config/quickshell/wallpapers.txt";
-        scanProc.command = ["bash", "-c", script];
-        scanProc.running = true;
+    // ── Wallpaper color-match theme ──────────────────────────────────────
+    // Runs qs-theme.py on a wallpaper and applies the resulting palette to
+    // Theme. Also remembers the path so the theme can be re-derived at boot.
+    function applyDynamicTheme(path) {
+        if (!path || path === "") return
+        root.dynamicWallpaper = path
+        // bash -c expands `~` (Process runs args without a shell).
+        themeGenProc.command = ["bash", "-c", "python3 -u ~/.scripts/qs-theme.py " + JSON.stringify(path)]
+        themeGenProc.running = true
     }
 
     Process {
-        id: scanProc
-        running: false
-        onRunningChanged: {
-            if (!running) {
-                // If it finished, check if the wallpapers.txt has any content
-                checkProc.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: checkProc
-        command: ["bash", "-c", "wc -l < ~/.config/quickshell/wallpapers.txt 2>/dev/null || echo 0"]
+        id: themeGenProc
         running: false
         stdout: SplitParser {
+            splitMarker: ""
             onRead: data => {
-                var count = parseInt(data.trim());
-                if (!isNaN(count) && count > 0) {
-                    root.scanFinished(true, "Found " + count + " wallpapers");
-                } else {
-                    root.scanFinished(false, "No wallpapers found in " + root.wallpaperDir);
+                try {
+                    var obj = JSON.parse(data.trim())
+                    if (obj.fallback) {
+                        Theme.clearDynamicPalette()
+                        return
+                    }
+                    if (Theme.applyDynamicPalette(obj.palette)) {
+                        root.theme = "dynamic"
+                    }
+                } catch (e) {
+                    console.log("qs-theme parse error: " + e)
+                    Theme.clearDynamicPalette()
                 }
             }
         }
     }
+
+    // Wallpaper browsing is handled by WallpaperPicker (live dir listing);
+    // the old "scan" cache no longer exists.
 }

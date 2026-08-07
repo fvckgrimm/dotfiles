@@ -37,11 +37,12 @@ shell.qml (entry point)
 | **shell.qml** | Entry point, creates per-screen Bars + top-level popups |
 | **Bar.qml** | Main panel (LayerShell Top), hosts widgets, popups anchored to it |
 | **Theme.qml** | Singleton: fonts, shapes/spacing/motion tokens, launcher commands, and the **theme system** — 7 palettes (`default`, `catppuccin-mocha/macchiato/frappe/latte`, `dracula`, `rosepine`) keyed by `currentTheme` |
-| **SettingsService.qml** | Persistent settings (widget visibility, wallpaper dir, bar layout) → `settings.json` in this repo, symlinked to `~/.config/quickshell/settings.json` |
+| **SettingsService.qml** | Persistent settings (widget visibility, wallpaper dirs, favorites, bar layout) → `settings.json` in this repo, symlinked to `~/.config/quickshell/settings.json` |
 | **NotificationService.qml** | Notification server, history, DnD, filtering → `~/.local/share/qs-notif-prefs.json` |
 | **TodoService.qml** | Day-keyed todo store → `~/.local/share/qs-todos.json` |
 | **LauncherService.qml** | Minimal state: open/close, mode (apps/clip/emoji/calc/words) |
 | **WallpaperService.qml** | Toggle open/close for WallpaperPicker |
+| **WallpaperPicker.qml** | File-manager-style browser: centered full-screen overlay (launcher-style keyboard focus); sidebar "Places" (`SettingsService.wallpaperDirs` — stored absolute, `~` auto-expanded, per-place `⇵` toggle for recursive subfolder scanning via `SettingsService.wallpaperRecursive`), Favorites view (curated list in `~/.config/quickshell/wallpapers.txt`), search filter, grid/list view (`SettingsService.wallpaperView`), lazy-loaded batches, live `qs-theme.py` palette mock |
 | **Widgets** | `*Widget.qml` — StatChip-based info displays (CPU, Mem, Net, Audio, etc.) |
 | **Popups** | `*Popup.qml`, `ControlCenter.qml`, `LauncherPopup.qml` — anchored overlays |
 | **StatChip.qml** | Reusable pill: icon + value + optional sparkline, hover/click/right-click |
@@ -244,5 +245,6 @@ All icons use Unicode codepoints from Nerd Fonts (e.g., `\u{f0349}`, `\udb80\udd
 | `wpctl`/`amixer` | WirePipe/ALSA audio | `AudioWidget`, `ControlCenter` |
 | `brightnessctl` | Screen brightness | `ControlCenter` |
 | `curl wttr.in` | Weather | `WeatherWidget` |
+| `~/.scripts/qs-theme.py` | Wallpaper → 32-key Theme palette (PIL, prints JSON) | `SettingsService.applyDynamicTheme`, `WallpaperPicker` preview |
 
 Ensure these are installed on target system.

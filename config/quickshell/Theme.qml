@@ -57,6 +57,11 @@ Scope {
     // ─────────────────────────────────────────────────────────────────────
     property string currentTheme: "default"
 
+    // When currentTheme === "dynamic", _p resolves to this palette instead of
+    // a named entry in `palettes`. Populated by the wallpaper theme matcher
+    // (qs-theme.py, via SettingsService.applyDynamicTheme). null = use default.
+    property var dynamicPalette: null
+
     readonly property var palettes: ({
         "default": {
             background: "#0e1116", surface: "#12161d",
@@ -158,7 +163,9 @@ Scope {
         }
     })
 
-    readonly property var _p: palettes[currentTheme] ?? palettes["default"]
+    readonly property var _p: currentTheme === "dynamic" && dynamicPalette
+        ? dynamicPalette
+        : (palettes[currentTheme] ?? palettes["default"])
 
     // ─────────────────────────────────────────────────────────────────────
     // COLOR — surfaces (elevation via tone, not glow)
@@ -221,14 +228,28 @@ Scope {
     readonly property string successContainer: _p.successContainer
 
     // Ordered list for theme pickers / cycling — first entry is the fallback.
-    readonly property var themeNames: ["default", "catppuccin-mocha", "catppuccin-macchiato",
+    readonly property var themeNames: ["default", "dynamic", "catppuccin-mocha", "catppuccin-macchiato",
         "catppuccin-frappe", "catppuccin-latte", "dracula", "rosepine"]
 
     function prettyName(name) {
-        var map = { "default": "Default", "catppuccin-mocha": "Catppuccin Mocha",
-            "catppuccin-macchiato": "Catppuccin Macchiato", "catppuccin-frappe": "Catppuccin Frappe",
-            "catppuccin-latte": "Catppuccin Latte", "dracula": "Dracula", "rosepine": "Rose Pine" }
+        var map = { "default": "Default", "dynamic": "Wallpaper Match",
+            "catppuccin-mocha": "Catppuccin Mocha", "catppuccin-macchiato": "Catppuccin Macchiato",
+            "catppuccin-frappe": "Catppuccin Frappe", "catppuccin-latte": "Catppuccin Latte",
+            "dracula": "Dracula", "rosepine": "Rose Pine" }
         return map[name] ?? name
+    }
+
+    // Adopt a palette produced by qs-theme.py (or any full palette object).
+    // Assigning a fresh object re-triggers the _p binding, repainting the
+    // whole shell. Returns false if the object is unusable.
+    function applyDynamicPalette(pal) {
+        if (!pal || typeof pal !== "object" || !pal.background || !pal.primary) return false
+        theme.dynamicPalette = Object.assign({}, pal)
+        return true
+    }
+
+    function clearDynamicPalette() {
+        theme.dynamicPalette = null
     }
 
     function cycle() {

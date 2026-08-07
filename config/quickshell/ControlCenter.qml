@@ -443,70 +443,35 @@ PopupWindow {
                     Layout.fillWidth: true
                     spacing: Theme.spacingSm
 
-                    Text { text: "Directory to scan:"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
+                    Text { text: "Browse from:"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: Theme.radiusSm
-                        color: Theme.surfaceContainerLow
+                    Repeater {
+                        model: SettingsService.wallpaperDirs
+                        delegate: Rectangle {
+                            Layout.fillWidth: true
+                            height: 26
+                            radius: Theme.radiusSm
+                            color: Theme.surfaceContainerLow
 
-                        TextInput {
-                            id: dirInput
-                            anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd; verticalCenter: parent.verticalCenter }
-                            text: SettingsService.wallpaperDir
-                            color: Theme.surfaceText
-                            font.family: Theme.fontFamily
-                            font.pointSize: Theme.labelLarge
-                            selectByMouse: true
-                            verticalAlignment: TextInput.AlignVCenter
-                            onTextEdited: SettingsService.wallpaperDir = text
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 30
-                        radius: Theme.radiusSm
-                        color: scanMa.containsMouse ? Theme.withAlpha(Theme.primary, 0.2) : Theme.withAlpha(Theme.primary, 0.12)
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰚔  Scan & Update list"
-                            color: Theme.primary
-                            font.family: Theme.fontFamily
-                            font.pointSize: Theme.labelLarge
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            id: scanMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                scanStatusText.text = "Scanning..."
-                                scanStatusText.color = Theme.surfaceText
-                                SettingsService.scanWallpapers()
+                            Text {
+                                anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd; verticalCenter: parent.verticalCenter }
+                                text: modelData
+                                color: Theme.surfaceTextVariant
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelLarge
+                                elide: Text.ElideMiddle
+                                verticalAlignment: Text.AlignVCenter
                             }
                         }
                     }
 
                     Text {
-                        id: scanStatusText
                         Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        text: ""
+                        wrapMode: Text.WordWrap
+                        text: "Manage folders and browse in the wallpaper picker."
                         color: Theme.surfaceTextVariant
                         font.family: Theme.fontFamily
-                        font.pointSize: Theme.labelLarge
-                    }
-
-                    Connections {
-                        target: SettingsService
-                        function onScanFinished(success, message) {
-                            scanStatusText.text = message
-                            scanStatusText.color = success ? Theme.success : Theme.error
-                        }
+                        font.pointSize: Theme.labelSmall
                     }
                 }
             }
