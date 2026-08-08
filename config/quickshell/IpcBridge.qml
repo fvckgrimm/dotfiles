@@ -11,4 +11,11 @@ Scope {
     signal toggleNotifCenter()
     signal toggleCalendar()
     signal toggleControlCenter()
+
+    // Global bar visibility — bound by every Bar. Hidden bars release
+    // their exclusive zone so windows reclaim the top edge.
+    property bool barVisible: true
+    function toggleBar() { root.barVisible = !root.barVisible }
+    function showBar()   { root.barVisible = true }
+    function hideBar()   { root.barVisible = false }
 }

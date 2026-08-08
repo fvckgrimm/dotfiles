@@ -8,13 +8,16 @@ PanelWindow {
     id: bar
     required property var screen
 
+    visible: IpcBridge.barVisible
+
     WlrLayershell.namespace: "quickshell:bar"
     WlrLayershell.layer: WlrLayer.Top
 
     anchors { top: true; left: true; right: true }
+    margins { left: Theme.spacingMd; right: Theme.spacingMd; top: Theme.spacingMd }
     implicitHeight: 34
     color: "transparent"
-    exclusiveZone: implicitHeight
+    exclusiveZone: implicitHeight + Theme.spacingMd
 
     NotificationPopup { id: notifPopup; barWindow: bar }
 
@@ -69,9 +72,11 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.bgBar
+        radius: Theme.radiusXl
+        clip: true
 
         Rectangle {
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; leftMargin: Theme.radiusXl; rightMargin: Theme.radiusXl }
             height: 1
             color: Theme.outlineVariant
         }

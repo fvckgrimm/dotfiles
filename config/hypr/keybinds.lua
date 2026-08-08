@@ -48,6 +48,7 @@ hl.bind("SUPER + CTRL + T", hl.dsp.exec_cmd("qs ipc call theme set catppuccin-mo
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("qs ipc call launcher pass"))
 hl.bind("SUPER + CTRL + S", hl.dsp.exec_cmd("qs ipc call launcher ssh"))
 hl.bind("SUPER + CTRL + K", hl.dsp.exec_cmd("qs ipc call launcher kaomoji"))
+hl.bind("SUPER + B", hl.dsp.exec_cmd("qs ipc call bar toggle"))
 
 -- --- NATIVE WINDOW MANAGEMENT --- --
 hl.bind("SUPER + Q", hl.dsp.window.close())

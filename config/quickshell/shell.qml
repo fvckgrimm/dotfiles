@@ -47,6 +47,13 @@ ShellRoot {
         target: "controlcenter"
         function toggle() { IpcBridge.toggleControlCenter() }
     }
+    // qs ipc call bar toggle   (also: show, hide)
+    IpcHandler {
+        target: "bar"
+        function toggle() { IpcBridge.toggleBar() }
+        function show()   { IpcBridge.showBar() }
+        function hide()   { IpcBridge.hideBar() }
+    }
     // qs ipc call theme set "catppuccin-mocha"  (or: default, catppuccin-macchiato,
     //   catppuccin-frappe, catppuccin-latte, dracula, rosepine)
     // qs ipc call theme cycle
