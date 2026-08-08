@@ -140,6 +140,17 @@ Scope {
         return p
     }
 
+    // Convert a path back to a `~`-relative (portable) form for persisting.
+    // Paths stay absolute in memory (the picker matches on absolute paths) but
+    // settings.json stores `~/...` so the config is machine-independent.
+    function toPortable(p) {
+        if (!p || root.homeDir === "") return p
+        var h = root.homeDir
+        if (p === h) return "~"
+        if (p.indexOf(h + "/") === 0) return "~" + p.slice(h.length)
+        return p
+    }
+
     Process {
         id: homeProc
         command: ["bash", "-c", "echo $HOME"]
@@ -162,6 +173,13 @@ Scope {
             return e
         })
         if (changed) root.wallpaperDirs = d
+        var rChanged = false
+        var r = root.wallpaperRecursive.map(p => {
+            var e = root.expandHome(p)
+            if (e !== p) rChanged = true
+            return e
+        })
+        if (rChanged) root.wallpaperRecursive = r
         faceProbe.running = true
         bannerProbe.running = true
     }
@@ -313,6 +331,7 @@ Scope {
                 root.loadedFromConfig = true;
                 root.loadFavorites()
                 root.wallpaperDirs = root.wallpaperDirs.map(p => root.expandHome(p))
+                root.wallpaperRecursive = root.wallpaperRecursive.map(p => root.expandHome(p))
                 faceProbe.running = true
                 bannerProbe.running = true
                 if (obj && obj.theme === "dynamic" && root.dynamicWallpaper) root.applyDynamicTheme(root.dynamicWallpaper)
@@ -341,13 +360,13 @@ Scope {
             "showGlanceTemp": root.showGlanceTemp,
             "showGlanceBattery": root.showGlanceBattery,
             "showGlanceNetwork": root.showGlanceNetwork,
-            "wallpaperDirs": root.wallpaperDirs,
-            "wallpaperRecursive": root.wallpaperRecursive,
+            "wallpaperDirs": root.wallpaperDirs.map(p => root.toPortable(p)),
+            "wallpaperRecursive": root.wallpaperRecursive.map(p => root.toPortable(p)),
             "wallpaperView": root.wallpaperView,
             "dashboardPosition": root.dashboardPosition,
             "theme": root.theme,
             "dynamicTheme": root.dynamicTheme,
-            "dynamicWallpaper": root.dynamicWallpaper,
+            "dynamicWallpaper": root.toPortable(root.dynamicWallpaper),
             "profileImage": root.profileImage,
             "profileBanner": root.profileBanner,
             "barLayout": root.barLayout
