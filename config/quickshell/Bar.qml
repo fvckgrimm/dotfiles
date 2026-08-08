@@ -62,7 +62,7 @@ PanelWindow {
         target: IpcBridge
         function onToggleNotifCenter()   { bar.toggleDashboard("notifs") }
         function onToggleCalendar()      { bar.toggleDashboard("calendar") }
-        function onToggleControlCenter() { bar.toggleDashboard("controls") }
+        function onToggleControlCenter() { bar.toggleDashboard("home") }
     }
 
     // ── Bar surface ──────────────────────────────────────────────────────
@@ -119,10 +119,10 @@ PanelWindow {
 
             Component { id: compControlCenter; BarButton {
                 text: "󰒓"
-                textColor: (dashboard.visible && dashboard.tab === "controls") ? Theme.primary : Theme.surfaceTextVariant
-                borderColor: (dashboard.visible && dashboard.tab === "controls") ? Theme.primary : "transparent"
+                textColor: (dashboard.visible && dashboard.tab === "home") ? Theme.primary : Theme.surfaceTextVariant
+                borderColor: (dashboard.visible && dashboard.tab === "home") ? Theme.primary : "transparent"
                 tooltipText: "Control Center"
-                onClicked: bar.toggleDashboard("controls")
+                onClicked: bar.toggleDashboard("home")
             } }
 
             Component { id: compTodo; BarButton {

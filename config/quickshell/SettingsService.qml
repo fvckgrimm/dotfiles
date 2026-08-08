@@ -47,13 +47,123 @@ Scope {
     // can be re-derived at boot without re-selecting).
     property bool   dynamicTheme: true
     property string dynamicWallpaper: ""
+    // Dashboard Home tab profile card: avatar image + banner background.
+    // Empty string = fall back to a glyph / themed gradient.
+    property string profileImage: ""
+    property string profileBanner: ""
+
+    // Resolved profile art from standard files: ~/.face* (avatar) and
+    // ~/.banner* (banner background). Detected at startup (and re-probed
+    // periodically so files can be hot-swapped while the shell is running);
+    // if found they take precedence over profileImage/profileBanner (which
+    // remain manual overrides in the Dashboard → Settings → PROFILE page).
+    // The stamps hold `<size>|<mtime>` and only signal *change*; the Bust
+    // counters are bumped on change so the UI can append a cache-busting URL
+    // fragment to force a reload of the image.
+    property string facePath: ""
+    property string faceStamp: ""
+    property int faceBust: 0
+    property string bannerPath: ""
+    property string bannerStamp: ""
+    property int bannerBust: 0
+
+    Process {
+        id: faceProbe
+        command: ["bash", "-c", "for f in ~/.face ~/.face.png ~/.face.jpg ~/.face.jpeg ~/.face.gif ~/.face.webp; do [ -f \"$f\" ] && { s=$(stat -c '%s|%Y' \"$f\") && echo \"$f|$s\" && exit 0; }; done; echo \"\""]
+        running: false
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                var line = data.trim()
+                if (line === "") {
+                    if (root.facePath !== "" || root.faceStamp !== "") { root.facePath = ""; root.faceStamp = ""; root.faceBust++ }
+                    return
+                }
+                var i = line.indexOf("|")
+                if (i < 0) return
+                var p = line.slice(0, i)
+                var st = line.slice(i + 1)
+                if (root.facePath !== p || root.faceStamp !== st) {
+                    root.facePath = p
+                    root.faceStamp = st
+                    root.faceBust++
+                }
+            }
+        }
+    }
+
+    Process {
+        id: bannerProbe
+        command: ["bash", "-c", "for f in ~/.banner ~/.banner.png ~/.banner.jpg ~/.banner.jpeg ~/.banner.gif ~/.banner.webp; do [ -f \"$f\" ] && { s=$(stat -c '%s|%Y' \"$f\") && echo \"$f|$s\" && exit 0; }; done; echo \"\""]
+        running: false
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                var line = data.trim()
+                if (line === "") {
+                    if (root.bannerPath !== "" || root.bannerStamp !== "") { root.bannerPath = ""; root.bannerStamp = ""; root.bannerBust++ }
+                    return
+                }
+                var i = line.indexOf("|")
+                if (i < 0) return
+                var p = line.slice(0, i)
+                var st = line.slice(i + 1)
+                if (root.bannerPath !== p || root.bannerStamp !== st) {
+                    root.bannerPath = p
+                    root.bannerStamp = st
+                    root.bannerBust++
+                }
+            }
+        }
+    }
+
+    // Re-probe the profile art files so swapping ~/.face* / ~/.banner* takes
+    // effect without restarting the shell.
+    Timer {
+        interval: 3000
+        running: true
+        repeat: true
+        onTriggered: {
+            faceProbe.running = true
+            bannerProbe.running = true
+        }
+    }
 
     // Expand a leading `~` to the real home directory (stored dirs are absolute).
+    // Qt.homeDir() is NOT exposed in this Quickshell build, so resolve $HOME via
+    // a bash Process at startup and re-normalize dirs once it lands.
+    property string homeDir: ""
+
     function expandHome(p) {
-        if (p[0] !== "~") return p
-        var h = Qt.homeDir()
-        if (!h || h === "") h = "$HOME"
-        return h + p.slice(1)
+        if (!p || p[0] !== "~") return p
+        if (root.homeDir !== "") return root.homeDir + p.slice(1)
+        return p
+    }
+
+    Process {
+        id: homeProc
+        command: ["bash", "-c", "echo $HOME"]
+        running: true
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                var h = data.trim()
+                if (h !== "" && root.homeDir !== h) root.homeDir = h
+            }
+        }
+    }
+
+    onHomeDirChanged: {
+        if (root.homeDir === "" || !root.loadedFromConfig) return
+        var changed = false
+        var d = root.wallpaperDirs.map(p => {
+            var e = root.expandHome(p)
+            if (e !== p) changed = true
+            return e
+        })
+        if (changed) root.wallpaperDirs = d
+        faceProbe.running = true
+        bannerProbe.running = true
     }
 
     function isRecursive(path) {
@@ -194,6 +304,8 @@ Scope {
                     if (obj.theme !== undefined) root.theme = obj.theme;
                     if (obj.dynamicTheme !== undefined) root.dynamicTheme = obj.dynamicTheme;
                     if (obj.dynamicWallpaper !== undefined) root.dynamicWallpaper = obj.dynamicWallpaper;
+                    if (obj.profileImage !== undefined) root.profileImage = obj.profileImage;
+                    if (obj.profileBanner !== undefined) root.profileBanner = obj.profileBanner;
                     if (obj.barLayout && obj.barLayout.left && obj.barLayout.center && obj.barLayout.right) root.barLayout = obj.barLayout;
                 } catch (e) {
                     console.log("Error loading quickshell settings: " + e);
@@ -201,6 +313,8 @@ Scope {
                 root.loadedFromConfig = true;
                 root.loadFavorites()
                 root.wallpaperDirs = root.wallpaperDirs.map(p => root.expandHome(p))
+                faceProbe.running = true
+                bannerProbe.running = true
                 if (obj && obj.theme === "dynamic" && root.dynamicWallpaper) root.applyDynamicTheme(root.dynamicWallpaper)
             }
         }
@@ -234,6 +348,8 @@ Scope {
             "theme": root.theme,
             "dynamicTheme": root.dynamicTheme,
             "dynamicWallpaper": root.dynamicWallpaper,
+            "profileImage": root.profileImage,
+            "profileBanner": root.profileBanner,
             "barLayout": root.barLayout
         };
         var json = JSON.stringify(obj);
@@ -363,6 +479,8 @@ Scope {
     onBarLayoutChanged: save()
     onDynamicThemeChanged: save()
     onDynamicWallpaperChanged: save()
+    onProfileImageChanged: save()
+    onProfileBannerChanged: save()
     onThemeChanged: {
         Theme.currentTheme = root.theme
         save()

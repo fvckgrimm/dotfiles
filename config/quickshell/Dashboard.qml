@@ -16,10 +16,9 @@ PopupWindow {
     implicitHeight: 560
     color: "transparent"
 
-    // "notifs" | "calendar" | "controls"
+    // "notifs" | "calendar" | "home" | "stats" | "settings"
     property string tab: "notifs"
     property string notifSubTab: "list"   // "list" | "dnd" | "filters"  (nested, Notifications only)
-    property bool   showControlSettings: false
 
     function openTab(t) {
         tab = t
@@ -48,9 +47,11 @@ PopupWindow {
         if (visible) {
             if (tab === "notifs") NotificationService.markAllRead()
             notifSubTab = "list"
-            showControlSettings = false
             volPoll.running = true
             brightPoll.running = true
+            identityPoll.running = true
+            uptimePoll.running = true
+            weatherPoll.running = true
             updateToday()
         }
     }
@@ -80,6 +81,26 @@ PopupWindow {
     property int volume: 0
     property bool muted: false
     property int brightness: 100
+
+    // ── Home profile card state ───────────────────────────────────────────
+    property string whoami: ""
+    property string host: ""
+    property string upTime: "—"
+
+    // ── Home weather card state ───────────────────────────────────────────
+    property string weatherTemp: "—"
+    property string weatherCond: ""
+    property string weatherHumidity: "—"
+    property string weatherWind: "—"
+    property string weatherFeels: "—"
+    property string weatherLocation: ""
+    property string clockTime: Qt.formatTime(new Date(), "hh:mm")
+    property string clockDate: Qt.formatDate(new Date(), "ddd, MMM d")
+
+    // ── Home timer card state ─────────────────────────────────────────────
+    property int timerTotal: 0
+    property int timerLeft: 0
+    property bool timerRunning: false
 
     // ── At-a-glance state (for coloring) ──────────────────────────────────
     property int tempC: 0
@@ -127,6 +148,116 @@ PopupWindow {
         onRunningChanged: if (running) lineNum = 0
     }
 
+    // ── Home: profile identity (whoami/host, once at open) ───────────────
+    Process {
+        id: identityPoll
+        command: ["bash", "-c", "whoami; hostname"]
+        running: false
+        stdout: SplitParser {
+            splitMarker: ""
+            onRead: data => {
+                var lines = data.trim().split("\n")
+                if (lines.length >= 1 && root.whoami === "") root.whoami = lines[0].trim()
+                if (lines.length >= 2 && root.host === "") root.host = lines[1].trim()
+            }
+        }
+    }
+
+    // ── Home: uptime ──────────────────────────────────────────────────────
+    Process {
+        id: uptimePoll
+        command: ["bash", "-c", "cat /proc/uptime"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                var up = parseInt(data.trim().split(/\s+/)[0])
+                if (isNaN(up)) return
+                var d = Math.floor(up / 86400), h = Math.floor((up % 86400) / 3600), m = Math.floor((up % 3600) / 60)
+                root.upTime = d > 0 ? d + "d " + h + "h " + m + "m" : h > 0 ? h + "h " + m + "m" : m + "m"
+            }
+        }
+    }
+    Timer { interval: 30000; running: true; repeat: true; onTriggered: uptimePoll.running = true }
+
+    // ── Home: detailed weather (wttr.in JSON) ─────────────────────────────
+    Process {
+        id: weatherPoll
+        command: ["bash", "-c", "curl -sf -m 8 'https://wttr.in/?format=j1' 2>/dev/null"]
+        running: false
+        stdout: StdioCollector {
+            waitForEnd: true
+            onDataChanged: {
+                if (text === "") return
+                try {
+                    var o = JSON.parse(text.trim())
+                    var c = o.current_condition && o.current_condition[0]
+                    if (!c) return
+                    root.weatherTemp = c.temp_C + "°C"
+                    root.weatherCond = (c.weatherDesc && c.weatherDesc[0] && c.weatherDesc[0].value) || ""
+                    root.weatherHumidity = c.humidity ? c.humidity + "%" : "—"
+                    root.weatherWind = c.windspeedKmph ? c.windspeedKmph + " km/h" : "—"
+                    root.weatherFeels = c.FeelsLikeC ? c.FeelsLikeC + "°C" : "—"
+                    if (o.nearest_area && o.nearest_area[0] && !root.weatherLocation)
+                        root.weatherLocation = o.nearest_area[0].areaName?.[0]?.value ?? ""
+                } catch (e) { }
+            }
+        }
+    }
+    Timer { interval: 1800000; running: true; repeat: true; onTriggered: weatherPoll.running = true }
+
+    // ── Home: live clock for the weather card ─────────────────────────────
+    Timer {
+        interval: 30000
+        running: true
+        repeat: true
+        onTriggered: {
+            var n = new Date()
+            root.clockTime = Qt.formatTime(n, "hh:mm")
+            root.clockDate = Qt.formatDate(n, "ddd, MMM d")
+        }
+    }
+
+    // ── Home: timer tick ──────────────────────────────────────────────────
+    Timer {
+        id: timerTick
+        interval: 1000
+        running: root.timerRunning
+        repeat: true
+        onTriggered: {
+            if (root.timerLeft > 0) root.timerLeft--
+            else root.finishTimer()
+        }
+    }
+
+    function startTimer(seconds) {
+        root.timerTotal = seconds
+        root.timerLeft = seconds
+        root.timerRunning = true
+    }
+
+    function pauseTimer()  { root.timerRunning = false }
+    function resetTimer()  { root.timerRunning = false; root.timerLeft = root.timerTotal }
+
+    function finishTimer() {
+        root.timerRunning = false
+        root.timerLeft = 0
+        NotificationService.send({
+            appName: "Timer",
+            summary: "⏱  Timer finished",
+            body: "Your " + root.fmtTimer(root.timerTotal) + " countdown is up.",
+            urgency: 2
+        })
+        // Try a few system sounds + players, in order of availability.
+        Quickshell.execDetached(["bash", "-c",
+            "for s in /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga /usr/share/sounds/freedesktop/stereo/complete.oga /usr/share/sounds/Oxygen-Sys-Long.ogg; do " +
+            "[ -f \"$s\" ] && { paplay \"$s\" 2>/dev/null || pw-play \"$s\" 2>/dev/null || aplay \"$s\" 2>/dev/null; break; }; done"])
+    }
+
+    function fmtTimer(s) {
+        var m = Math.floor(s / 60), sec = s % 60
+        return (m < 10 ? "0" + m : m) + ":" + (sec < 10 ? "0" + sec : sec)
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
@@ -150,6 +281,24 @@ PopupWindow {
                 spacing: Theme.spacingSm
 
                 Item { Layout.preferredHeight: Theme.spacingXs }
+
+                Rectangle {
+                    id: railHome
+                    Layout.alignment: Qt.AlignHCenter
+                    readonly property bool active: root.tab === "home"
+                    width: 40; height: 40; radius: Theme.radiusMd
+                    color: active ? Theme.withAlpha(Theme.primary, 0.16)
+                         : (railHomeMa.containsMouse ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : "transparent")
+                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\u{f02dc}"
+                        color: railHome.active ? Theme.primary : Theme.surfaceTextVariant
+                        font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium
+                    }
+                    MouseArea { id: railHomeMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.tab = "home" }
+                }
 
                 Rectangle {
                     id: railNotifs
@@ -195,24 +344,6 @@ PopupWindow {
                 }
 
                 Rectangle {
-                    id: railControls
-                    Layout.alignment: Qt.AlignHCenter
-                    readonly property bool active: root.tab === "controls"
-                    width: 40; height: 40; radius: Theme.radiusMd
-                    color: active ? Theme.withAlpha(Theme.primary, 0.16)
-                         : (railCtrlMa.containsMouse ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : "transparent")
-                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰒓"
-                        color: railControls.active ? Theme.primary : Theme.surfaceTextVariant
-                        font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium
-                    }
-                    MouseArea { id: railCtrlMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.tab = "controls" }
-                }
-
-                Rectangle {
                     id: railStats
                     Layout.alignment: Qt.AlignHCenter
                     readonly property bool active: root.tab === "stats"
@@ -228,6 +359,24 @@ PopupWindow {
                         font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium
                     }
                     MouseArea { id: railStatsMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.tab = "stats" }
+                }
+
+                Rectangle {
+                    id: railSettings
+                    Layout.alignment: Qt.AlignHCenter
+                    readonly property bool active: root.tab === "settings"
+                    width: 40; height: 40; radius: Theme.radiusMd
+                    color: active ? Theme.withAlpha(Theme.primary, 0.16)
+                         : (railSettingsMa.containsMouse ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : "transparent")
+                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\u{f0493}"
+                        color: railSettings.active ? Theme.primary : Theme.surfaceTextVariant
+                        font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium
+                    }
+                    MouseArea { id: railSettingsMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.tab = "settings" }
                 }
 
                 Item { Layout.fillHeight: true }
@@ -267,7 +416,7 @@ PopupWindow {
                     spacing: Theme.spacingSm
 
                     Text {
-                        text: root.tab === "notifs" ? "Notifications" : root.tab === "calendar" ? "Calendar" : root.tab === "stats" ? "System Stats" : "Controls"
+                        text: root.tab === "notifs" ? "Notifications" : root.tab === "calendar" ? "Calendar" : root.tab === "stats" ? "System Stats" : root.tab === "settings" ? "Settings" : "Home"
                         color: Theme.surfaceText
                         font.family: Theme.fontFamily
                         font.pointSize: Theme.titleMedium
@@ -304,18 +453,20 @@ PopupWindow {
                         }
                     }
 
-                    // Controls: gear toggles the nested settings sub-view
+                    // Home: live clock chip in the header
                     Rectangle {
-                        visible: root.tab === "controls"
-                        width: 26; height: 26; radius: Theme.radiusSm
-                        color: ctrlGearMa.containsMouse ? Theme.withAlpha(Theme.surfaceText, Theme.stateHoverOpacity) : "transparent"
+                        visible: root.tab === "home"
+                        implicitWidth: clockChipLbl.implicitWidth + Theme.spacingMd
+                        implicitHeight: 24
+                        radius: Theme.radiusSm
+                        color: Theme.surfaceContainerLow
                         Text {
+                            id: clockChipLbl
                             anchors.centerIn: parent
-                            text: root.showControlSettings ? "󰅖" : "󰒓"
-                            color: Theme.surfaceTextVariant
-                            font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall
+                            text: root.clockTime + "  ·  " + root.clockDate
+                            color: Theme.primary
+                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true
                         }
-                        MouseArea { id: ctrlGearMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.showControlSettings = !root.showControlSettings }
                     }
 
                     Rectangle {
@@ -1029,16 +1180,116 @@ Tap + add to create one" : "No tasks for this day"
                         }
                     }
 
-                    // ── CONTROLS ──────────────────────────────────────
+                    // ── HOME (quick controls + profile + weather + timer) ──
                     Item {
                         anchors.fill: parent
-                        visible: root.tab === "controls"
+                        visible: root.tab === "home"
 
-                        // main controls
-                        ColumnLayout {
+                        Flickable {
                             anchors.fill: parent
-                            visible: !root.showControlSettings
-                            spacing: Theme.spacingLg
+                            clip: true
+                            contentHeight: homeCol.implicitHeight
+
+                            ColumnLayout {
+                                id: homeCol
+                                width: parent.width
+                                spacing: Theme.spacingLg
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacingLg
+
+                            // ── Profile banner card ──────────────────────────
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 104
+                                radius: Theme.radiusLg
+                                clip: true
+
+                                // Base: themed gradient (fallback bg when no banner image)
+                                Rectangle {
+                                    anchors.fill: parent
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: Theme.withAlpha(Theme.primary, 0.32) }
+                                        GradientStop { position: 1.0; color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.55) }
+                                    }
+                                }
+
+                                // Banner background (image/gif, changeable)
+                                AnimatedImage {
+                                    id: bannerImg
+                                    anchors.fill: parent
+                                    source: SettingsService.bannerPath !== "" ? SettingsService.bannerPath + "#" + SettingsService.bannerBust
+                                          : SettingsService.profileBanner !== "" ? SettingsService.expandHome(SettingsService.profileBanner)
+                                          : ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    visible: status === Image.Ready
+                                }
+
+                                // Legibility scrim over the image
+                                Rectangle {
+                                    anchors.fill: parent
+                                    visible: bannerImg.status === Image.Ready
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: Qt.rgba(0.03, 0.05, 0.08, 0.45) }
+                                        GradientStop { position: 1.0; color: Qt.rgba(0.03, 0.05, 0.08, 0.78) }
+                                    }
+                                }
+
+                                RowLayout {
+                                    anchors { fill: parent; leftMargin: Theme.spacingLg; rightMargin: Theme.spacingLg }
+                                    spacing: Theme.spacingXs
+
+                                    Rectangle {
+                                        id: avatar
+                                        Layout.preferredWidth: 60; Layout.preferredHeight: 60
+                                        radius: Theme.radiusFull
+                                        color: Theme.surfaceContainerHigh
+                                        border.color: Theme.withAlpha(Theme.primary, 0.45)
+                                        border.width: 2
+                                        clip: true
+
+                                        AnimatedImage {
+                                            id: avatarImg
+                                            anchors.fill: parent
+                                            source: SettingsService.facePath !== "" ? SettingsService.facePath + "#" + SettingsService.faceBust
+                                                  : SettingsService.profileImage !== "" ? SettingsService.expandHome(SettingsService.profileImage)
+                                                  : ""
+                                            fillMode: Image.PreserveAspectCrop
+                                            visible: status === Image.Ready
+                                        }
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\u{f0004}"
+                                            color: Theme.primary
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.titleLarge
+                                            visible: avatarImg.status !== Image.Ready
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        Layout.alignment: Qt.AlignVCenter
+                                        spacing: Theme.spacingXs
+
+                                        Text {
+                                            text: root.whoami !== "" ? root.whoami : "user"
+                                            color: Theme.surfaceText
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.titleLarge; font.bold: true
+                                        }
+                                        Text {
+                                            text: (root.whoami !== "" ? root.whoami : "user") + "@" + (root.host !== "" ? root.host : "host")
+                                            color: Theme.surfaceTextVariant
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.bodyMedium
+                                        }
+                                        Text {
+                                            text: "󰅐  up " + root.upTime
+                                            color: Theme.surfaceTextDim
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                        }
+                                    }
+                                }
+                            }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -1129,158 +1380,437 @@ Tap + add to create one" : "No tasks for this day"
                                 }
                             }
 
-                            Item { Layout.fillHeight: true }
-                        }
+                            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
 
-                        // nested settings sub-view
-                        ColumnLayout {
-                            id: settingsRoot
-                            anchors.fill: parent
-                            visible: root.showControlSettings
-                            spacing: Theme.spacingMd
-
-                            Text { text: "MODULE VISIBILITY"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
-
-                            Flickable {
+                            // ── Weather card ────────────────────────────────
+                            Rectangle {
                                 Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-                                interactive: !SettingsService.editorDragging  // don't steal chip drags
-                                contentHeight: settingsCol.implicitHeight
+                                implicitHeight: weatherCol.implicitHeight + Theme.spacingLg
+                                radius: Theme.radiusLg
+                                color: Theme.surfaceContainerLow
 
                                 ColumnLayout {
-                                    id: settingsCol
-                                    width: parent.width
-                                    spacing: Theme.spacingLg
+                                    id: weatherCol
+                                    anchors { fill: parent; margins: Theme.spacingLg }
+                                    spacing: Theme.spacingMd
 
-                                    ColumnLayout {
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: Theme.spacingSm
-
-                                        // Drag-and-drop bar layout editor (click chips to toggle visibility)
-                                        BarLayoutEditor { Layout.fillWidth: true }
-
-                                        // Dashboard Position (not a bar module — kept as a separate toggle)
-                                        Item {
+                                        Text {
+                                            text: "󰖔  Weather"
+                                            color: Theme.surfaceText
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.bodyLarge; font.bold: true
                                             Layout.fillWidth: true
-                                            implicitHeight: 28
-
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.leftMargin: Theme.spacingXs
-                                                anchors.rightMargin: Theme.spacingXs
-                                                spacing: Theme.spacingMd
-
-                                                Text { text: "󰁎"; color: Theme.primary; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall; Layout.preferredWidth: 18 }
-                                                Text {
-                                                    text: "Dashboard Position — " + SettingsService.dashboardPosition
-                                                    color: Theme.surfaceText
-                                                    font.family: Theme.fontFamily
-                                                    font.pointSize: Theme.labelLarge
-                                                    Layout.fillWidth: true
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-                                            MouseArea { anchors.fill: parent; onClicked: root.toggleSetting("dashboardPosition") }
+                                        }
+                                        Text {
+                                            text: root.weatherLocation
+                                            color: Theme.surfaceTextDim
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                            elide: Text.ElideRight
                                         }
                                     }
 
-                                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
-
-                                    Text { text: "AT A GLANCE CARDS"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
-
-                                    ColumnLayout {
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: Theme.spacingSm
-
-                                        ToggleRow {
-                                            icon: "󰻠"
-                                            label: "CPU"
-                                            checked: SettingsService.showGlanceCpu
-                                            onToggled: v => SettingsService.showGlanceCpu = v
-                                        }
-                                        ToggleRow {
-                                            icon: "󰍛"
-                                            label: "Memory"
-                                            checked: SettingsService.showGlanceMemory
-                                            onToggled: v => SettingsService.showGlanceMemory = v
-                                        }
-                                        ToggleRow {
-                                            icon: "󰋊"
-                                            label: "Storage"
-                                            checked: SettingsService.showGlanceStorage
-                                            onToggled: v => SettingsService.showGlanceStorage = v
-                                        }
-                                        ToggleRow {
-                                            icon: "󰔏"
-                                            label: "Temperature"
-                                            checked: SettingsService.showGlanceTemp
-                                            onToggled: v => SettingsService.showGlanceTemp = v
-                                        }
-                                        ToggleRow {
-                                            icon: "󰁹"
-                                            label: "Battery"
-                                            checked: SettingsService.showGlanceBattery
-                                            visible: SettingsService.hasBattery
-                                            onToggled: v => SettingsService.showGlanceBattery = v
-                                        }
-                                        ToggleRow {
-                                            icon: "󰖩"
-                                            label: "Network"
-                                            checked: SettingsService.showGlanceNetwork
-                                            onToggled: v => SettingsService.showGlanceNetwork = v
-                                        }
-                                    }
-
-                                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
-
-                                    Text { text: "THEME"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
-
-                                    Text { text: "Active: " + Theme.prettyName(SettingsService.theme); color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
-
-                                    ThemePicker { Layout.fillWidth: true }
-
-                                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
-
-                                    Text { text: "WALLPAPERS SOURCE"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: Theme.spacingSm
-
-                                        ToggleRow {
-                                            icon: "󰾜"
-                                            label: "Match theme to wallpaper"
-                                            checked: SettingsService.dynamicTheme
-                                            onToggled: v => SettingsService.dynamicTheme = v
-                                        }
-
-                                        Text { text: "Browse from:"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
-
-                                        Repeater {
-                                            model: SettingsService.wallpaperDirs
-                                            delegate: Rectangle {
-                                                Layout.fillWidth: true
-                                                height: 26
-                                                radius: Theme.radiusSm
-                                                color: Theme.surfaceContainerLow
-                                                Text {
-                                                    anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd; verticalCenter: parent.verticalCenter }
-                                                    text: modelData
-                                                    color: Theme.surfaceTextVariant
-                                                    font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
-                                                    elide: Text.ElideMiddle
-                                                    verticalAlignment: Text.AlignVCenter
-                                                }
-                                            }
-                                        }
+                                        spacing: Theme.spacingLg
 
                                         Text {
-                                            Layout.fillWidth: true
-                                            wrapMode: Text.WordWrap
-                                            text: "Manage folders and browse in the wallpaper picker."
-                                            color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall
+                                            text: root.weatherTemp
+                                            color: Theme.surfaceText
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.titleLarge; font.bold: true
                                         }
+                                        Text {
+                                            text: root.weatherCond
+                                            color: Theme.surfaceTextVariant
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.bodyMedium
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.alignment: Qt.AlignRight
+                                            spacing: 0
+                                            Text {
+                                                text: root.clockTime
+                                                color: Theme.primary
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium; font.bold: true
+                                                horizontalAlignment: Text.AlignRight
+                                            }
+                                            Text {
+                                                text: root.clockDate
+                                                color: Theme.surfaceTextVariant
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                                horizontalAlignment: Text.AlignRight
+                                            }
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Theme.spacingSm
+
+                                        Repeater {
+                                            model: [
+                                                { icon: "󰓎", label: "Humidity", value: root.weatherHumidity },
+                                                { icon: "󰖊", label: "Wind",     value: root.weatherWind },
+                                                { icon: "󰉂", label: "Feels",    value: root.weatherFeels },
+                                            ]
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: 34
+                                                radius: Theme.radiusSm
+                                                color: Theme.surfaceContainerHigh
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.margins: Theme.spacingSm
+                                                    spacing: Theme.spacingSm
+                                                    Text { text: modelData.icon; color: Theme.secondary; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall }
+                                                    ColumnLayout {
+                                                        spacing: 0
+                                                        Text { text: modelData.value; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+                                                        Text { text: modelData.label; color: Theme.surfaceTextDim; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // ── Timer card ───────────────────────────────────
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: timerCol.implicitHeight + Theme.spacingLg
+                                radius: Theme.radiusLg
+                                color: Theme.surfaceContainerLow
+
+                                ColumnLayout {
+                                    id: timerCol
+                                    anchors { fill: parent; margins: Theme.spacingLg }
+                                    spacing: Theme.spacingMd
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Text {
+                                            text: "󰔠  Timer"
+                                            color: Theme.surfaceText
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.bodyLarge; font.bold: true
+                                            Layout.fillWidth: true
+                                        }
+                                        Text {
+                                            text: root.timerRunning ? "running" : (root.timerLeft > 0 ? "paused" : "idle")
+                                            color: root.timerRunning ? Theme.success : Theme.surfaceTextDim
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                        }
+                                    }
+
+                                    Text {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        text: root.fmtTimer(root.timerLeft)
+                                        color: Theme.surfaceText
+                                        font.family: Theme.fontFamily; font.pointSize: 26; font.bold: true
+                                    }
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 4; radius: 2
+                                        color: Theme.surfaceContainerHigh
+                                        Rectangle {
+                                            width: root.timerTotal > 0 ? (parent.width * (root.timerTotal - root.timerLeft) / root.timerTotal) : 0
+                                            height: parent.height; radius: 2
+                                            color: root.timerRunning ? Theme.success : Theme.primary
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Theme.spacingSm
+
+                                        Repeater {
+                                            model: [1, 5, 15, 25]
+                                            delegate: Rectangle {
+                                                required property int modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: 28
+                                                radius: Theme.radiusSm
+                                                color: presetMa.containsMouse ? Theme.withAlpha(Theme.primary, 0.2) : Theme.surfaceContainerHigh
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData + "m"
+                                                    color: Theme.primary
+                                                    font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true
+                                                }
+                                                MouseArea { id: presetMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.startTimer(modelData * 60) }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            Layout.preferredWidth: 28; Layout.fillHeight: true
+                                            implicitHeight: 28; radius: Theme.radiusSm
+                                            color: minusMa.containsMouse ? Theme.withAlpha(Theme.error, 0.2) : Theme.surfaceContainerHigh
+                                            Text { anchors.centerIn: parent; text: "−"; color: Theme.surfaceText; font.pointSize: Theme.titleMedium; font.bold: true }
+                                            MouseArea { id: minusMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.timerLeft = Math.max(0, root.timerLeft - 60) }
+                                        }
+                                        Rectangle {
+                                            Layout.preferredWidth: 28; Layout.fillHeight: true
+                                            implicitHeight: 28; radius: Theme.radiusSm
+                                            color: plusMa.containsMouse ? Theme.withAlpha(Theme.success, 0.2) : Theme.surfaceContainerHigh
+                                            Text { anchors.centerIn: parent; text: "+"; color: Theme.surfaceText; font.pointSize: Theme.titleMedium; font.bold: true }
+                                            MouseArea { id: plusMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.timerLeft = Math.min(3599, root.timerLeft + 60) }
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Theme.spacingSm
+
+                                        Rectangle {
+                                            Layout.fillWidth: true; Layout.fillHeight: true
+                                            implicitHeight: 32; radius: Theme.radiusSm
+                                            color: root.timerRunning ? Theme.withAlpha(Theme.warning, 0.2) : Theme.withAlpha(Theme.success, 0.2)
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: root.timerRunning ? "Pause" : "Start"
+                                                color: root.timerRunning ? Theme.warning : Theme.success
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent; hoverEnabled: true
+                                                onClicked: {
+                                                    if (root.timerRunning) root.pauseTimer()
+                                                    else if (root.timerTotal > 0) root.timerRunning = true
+                                                    else root.startTimer(60)
+                                                }
+                                            }
+                                        }
+                                        Rectangle {
+                                            Layout.preferredWidth: 72; Layout.fillHeight: true
+                                            implicitHeight: 32; radius: Theme.radiusSm
+                                            color: resetMa.containsMouse ? Theme.withAlpha(Theme.error, 0.2) : Theme.surfaceContainerHigh
+                                            Text { anchors.centerIn: parent; text: "Reset"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
+                                            MouseArea { id: resetMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.resetTimer() }
+                                        }
+                                    }
+                                }
+                            }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── SETTINGS (module visibility, glance cards, theme, profile, wallpaper) ──
+                    Item {
+                        anchors.fill: parent
+                        visible: root.tab === "settings"
+
+                        Flickable {
+                            anchors.fill: parent
+                            clip: true
+                            interactive: !SettingsService.editorDragging  // don't steal chip drags
+                            contentHeight: settingsCol.implicitHeight
+
+                            ColumnLayout {
+                                id: settingsCol
+                                width: parent.width
+                                spacing: Theme.spacingLg
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacingSm
+
+                                    Text { text: "MODULE VISIBILITY"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                                    // Drag-and-drop bar layout editor (click chips to toggle visibility)
+                                    BarLayoutEditor { Layout.fillWidth: true }
+
+                                    // Dashboard Position (not a bar module — kept as a separate toggle)
+                                    Item {
+                                        Layout.fillWidth: true
+                                        implicitHeight: 28
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: Theme.spacingXs
+                                            anchors.rightMargin: Theme.spacingXs
+                                            spacing: Theme.spacingMd
+
+                                            Text { text: "󰁎"; color: Theme.primary; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall; Layout.preferredWidth: 18 }
+                                            Text {
+                                                text: "Dashboard Position — " + SettingsService.dashboardPosition
+                                                color: Theme.surfaceText
+                                                font.family: Theme.fontFamily
+                                                font.pointSize: Theme.labelLarge
+                                                Layout.fillWidth: true
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+                                        MouseArea { anchors.fill: parent; onClicked: root.toggleSetting("dashboardPosition") }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
+
+                                Text { text: "AT A GLANCE CARDS"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacingSm
+
+                                    ToggleRow {
+                                        icon: "󰻠"
+                                        label: "CPU"
+                                        checked: SettingsService.showGlanceCpu
+                                        onToggled: v => SettingsService.showGlanceCpu = v
+                                    }
+                                    ToggleRow {
+                                        icon: "󰍛"
+                                        label: "Memory"
+                                        checked: SettingsService.showGlanceMemory
+                                        onToggled: v => SettingsService.showGlanceMemory = v
+                                    }
+                                    ToggleRow {
+                                        icon: "󰋊"
+                                        label: "Storage"
+                                        checked: SettingsService.showGlanceStorage
+                                        onToggled: v => SettingsService.showGlanceStorage = v
+                                    }
+                                    ToggleRow {
+                                        icon: "󰔏"
+                                        label: "Temperature"
+                                        checked: SettingsService.showGlanceTemp
+                                        onToggled: v => SettingsService.showGlanceTemp = v
+                                    }
+                                    ToggleRow {
+                                        icon: "󰁹"
+                                        label: "Battery"
+                                        checked: SettingsService.showGlanceBattery
+                                        visible: SettingsService.hasBattery
+                                        onToggled: v => SettingsService.showGlanceBattery = v
+                                    }
+                                    ToggleRow {
+                                        icon: "󰖩"
+                                        label: "Network"
+                                        checked: SettingsService.showGlanceNetwork
+                                        onToggled: v => SettingsService.showGlanceNetwork = v
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
+
+                                Text { text: "THEME"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                                Text { text: "Active: " + Theme.prettyName(SettingsService.theme); color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall }
+
+                                ThemePicker { Layout.fillWidth: true }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
+
+                                Text { text: "PROFILE"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacingSm
+
+                                    // Avatar image path
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        implicitHeight: 34
+                                        radius: Theme.radiusSm
+                                        color: Theme.surfaceContainerLow
+
+                                        RowLayout {
+                                            anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd }
+                                            spacing: Theme.spacingSm
+                                            Text { text: "󰊕"; color: Theme.primary; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall }
+                                            Text { text: "Avatar"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; Layout.preferredWidth: 44 }
+                                            TextInput {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
+                                                verticalAlignment: Text.AlignVCenter
+                                                color: Theme.surfaceTextVariant
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                                text: SettingsService.profileImage
+                                                selectByMouse: true
+                                                onEditingFinished: SettingsService.profileImage = text.trim()
+                                            }
+                                        }
+                                    }
+
+                                    // Banner image path
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        implicitHeight: 34
+                                        radius: Theme.radiusSm
+                                        color: Theme.surfaceContainerLow
+
+                                        RowLayout {
+                                            anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd }
+                                            spacing: Theme.spacingSm
+                                            Text { text: "󰒘"; color: Theme.secondary; font.family: Theme.fontFamily; font.pointSize: Theme.titleSmall }
+                                            Text { text: "Banner"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; Layout.preferredWidth: 44 }
+                                            TextInput {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
+                                                verticalAlignment: Text.AlignVCenter
+                                                color: Theme.surfaceTextVariant
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                                text: SettingsService.profileBanner
+                                                selectByMouse: true
+                                                onEditingFinished: SettingsService.profileBanner = text.trim()
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        wrapMode: Text.WordWrap
+                                        text: "Absolute or ~ paths. GIFs animate in the Home banner."
+                                        color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outlineVariant }
+
+                                Text { text: "WALLPAPERS SOURCE"; color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacingSm
+
+                                    ToggleRow {
+                                        icon: "󰾜"
+                                        label: "Match theme to wallpaper"
+                                        checked: SettingsService.dynamicTheme
+                                        onToggled: v => SettingsService.dynamicTheme = v
+                                    }
+
+                                    Text { text: "Browse from:"; color: Theme.surfaceText; font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge }
+
+                                    Repeater {
+                                        model: SettingsService.wallpaperDirs
+                                        delegate: Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 26
+                                            radius: Theme.radiusSm
+                                            color: Theme.surfaceContainerLow
+                                            Text {
+                                                anchors { fill: parent; leftMargin: Theme.spacingMd; rightMargin: Theme.spacingMd; verticalCenter: parent.verticalCenter }
+                                                text: modelData
+                                                color: Theme.surfaceTextVariant
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge
+                                                elide: Text.ElideMiddle
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        wrapMode: Text.WordWrap
+                                        text: "Manage folders and browse in the wallpaper picker."
+                                        color: Theme.surfaceTextVariant; font.family: Theme.fontFamily; font.pointSize: Theme.labelSmall
                                     }
                                 }
                             }

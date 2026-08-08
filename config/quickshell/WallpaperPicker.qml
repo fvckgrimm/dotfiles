@@ -181,7 +181,7 @@ PanelWindow {
     function expandPath(raw) {
         var p = (raw || "").trim()
         if (p === "") return ""
-        if (p[0] === "~") p = Qt.homeDir() + p.slice(1)
+        if (p[0] === "~") p = SettingsService.expandHome(p)
         if (p[0] !== "/") return ""
         return p.replace(/\/+$/, "")
     }
