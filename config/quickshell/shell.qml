@@ -13,7 +13,7 @@ ShellRoot {
     }
     // qs ipc call launcher show
     // qs ipc call launcher toggle
-    // qs ipc call launcher showMode "apps"   (also: calc, clip, emoji, words, kaomoji, pass, ssh)
+    // qs ipc call launcher showMode "apps"   (also: calc, clip, emoji, words, kaomoji, pass, ssh, notes)
     IpcHandler {
         target: "launcher"
         function show()      { LauncherService.show() }
@@ -26,11 +26,19 @@ ShellRoot {
         function kaomoji()   { LauncherService.showMode("kaomoji") }
         function pass()      { LauncherService.showMode("pass") }
         function ssh()       { LauncherService.showMode("ssh") }
+        function notes()     { LauncherService.showMode("notes") }
     }
     // qs ipc call todo toggle
     IpcHandler {
         target: "todo"
         function toggle() { TodoService.toggle() }
+    }
+    // qs ipc call notes toggle   (also: open, close)
+    IpcHandler {
+        target: "notes"
+        function toggle() { NotesService.toggle() }
+        function open()   { NotesService.show() }
+        function close()  { NotesService.hide() }
     }
     // qs ipc call notifications toggle
     IpcHandler {
@@ -82,6 +90,15 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         TodoWidget {
+            required property var modelData
+            barWindow: null
+            screen: modelData
+        }
+    }
+    // NotesPanel — full-height side panel, top-level, one per screen.
+    Variants {
+        model: Quickshell.screens
+        NotesPanel {
             required property var modelData
             barWindow: null
             screen: modelData

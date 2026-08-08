@@ -8,10 +8,11 @@ import QtQuick.Controls
 import "KaomojiDb.js" as KaomojiDb
 
 // Full launcher — centered overlay
-// Modes: apps | clip | emoji | calc | words | kaomoji | pass | ssh
-// Slash-prefix routing works in any mode: /kao, /pass, /ssh (also /apps, /clip,
-// /emoji, /calc, /words) — typing the prefix switches mode and the rest becomes
-// the query. In pass mode a leading `otp` token switches to pass-otp copying.
+// Modes: apps | clip | emoji | calc | words | kaomoji | pass | ssh | notes
+// Slash-prefix routing works in any mode: /kao, /pass, /ssh, /nt (also /apps,
+// /clip, /emoji, /calc, /words) — typing the prefix switches mode and the rest
+// becomes the query. In pass mode a leading `otp` token switches to pass-otp
+// copying.
 PanelWindow {
     id: root
 
@@ -56,6 +57,7 @@ PanelWindow {
         if (mode === "pass")   loadPass.running = true
         if (mode === "ssh")    loadSsh.running = true
         if (mode === "kaomoji") { root.allKaomoji = KaomojiDb.entries; root.filterResults() }
+        if (mode === "notes")  { NotesService.refresh(); root.filterResults() }
     }
 
     onQueryChanged: {
@@ -76,7 +78,8 @@ PanelWindow {
     property var allSsh:    []
 
     // `/cmd rest` — switch to the matching mode and drop the prefix from the query.
-    // When already in that mode just strip the prefix. Returns true when consumed.
+    // When already in that mode just strip the prefix (bare `/cmd` = no-op, it
+    // must not reset an active filter). Returns true when consumed.
     function routePrefix() {
         var m = /^\/(\w+)(?:\s*(.*))?$/.exec(root.query)
         if (!m) return false
@@ -85,11 +88,12 @@ PanelWindow {
         var target = {
             kao: "kaomoji", kaomoji: "kaomoji", pass: "pass", ssh: "ssh",
             app: "apps", apps: "apps", clip: "clip", emoji: "emoji",
-            calc: "calc", word: "words", words: "words"
+            calc: "calc", word: "words", words: "words",
+            nt: "notes", note: "notes", notes: "notes"
         }[cmd]
         if (!target) return false
         if (target === root.mode) {
-            root.query = rest
+            if (rest !== "") root.query = rest
             return true
         }
         root.mode = target
@@ -116,7 +120,42 @@ PanelWindow {
         : root.mode === "pass" ? [{ id: "all", label: "Passwords" }, { id: "otp", label: "OTP" }]
         : []
 
+    // Notes results — synthesized, not a loaded array. Scratchpad always leads,
+    // then notes sorted pinned-first; a non-empty query narrows by name and
+    // appends the `/nt <text>` actions (add-to-scratchpad / new note).
+    function notesResults() {
+        var q = root.query.trim().toLowerCase()
+        var out = []
+        out.push({ kind: "scratchpad", name: "Scratchpad", pinned: true })
+
+        var pinned = [], rest = []
+        for (var i = 0; i < NotesService.notes.length; i++) {
+            var n = NotesService.notes[i]
+            if (n.name === "Scratchpad") continue
+            if (q === "" || n.name.toLowerCase().includes(q)) {
+                if (n.pinned) pinned.push(n)
+                else rest.push(n)
+            }
+        }
+        pinned.sort((a, b) => a.name.localeCompare(b.name))
+        rest.sort((a, b) => a.name.localeCompare(b.name))
+        for (var j = 0; j < pinned.length; j++) out.push({ kind: "note", name: pinned[j].name, pinned: true })
+        for (var k = 0; k < rest.length; k++) out.push({ kind: "note", name: rest[k].name, pinned: false })
+
+        if (q !== "") {
+            out.push({ kind: "addscratch", name: "Add to scratchpad: " + root.query.trim() })
+            out.push({ kind: "newnote", name: "New note: " + root.query.trim() })
+        } else {
+            out.push({ kind: "newclip", name: "New note from clipboard" })
+        }
+        return out
+    }
+
     function filterResults() {
+        if (root.mode === "notes") {
+            root.results = root.notesResults()
+            return
+        }
         var q = root.mode === "pass" ? root.passSearchText().toLowerCase() : query.toLowerCase().trim()
         var src = mode === "apps"    ? allApps
                 : mode === "clip"    ? (clipFilter === "all" ? allClip : allClip.filter(it => it.kind === clipFilter))
@@ -189,6 +228,28 @@ PanelWindow {
                 "printf '%s' " + JSON.stringify(item) + " | wl-copy && notify-send -t 2000 \"Copied\" " + JSON.stringify(item)])
         } else if (mode === "words") {
             Quickshell.execDetached(["bash", "-c", "printf '%s' " + JSON.stringify(item) + " | wl-copy"])
+        } else if (mode === "notes") {
+            if (item.kind === "scratchpad") {
+                NotesService.openNote(NotesService.scratchName)
+                NotesService.open = true
+            } else if (item.kind === "note") {
+                NotesService.openNote(item.name)
+                NotesService.open = true
+            } else if (item.kind === "addscratch") {
+                var rest = root.query.trim().replace(/^\/nt\s*/i, "")
+                if (rest !== "") {
+                    NotesService.appendScratchpad(rest)
+                    Quickshell.execDetached(["bash", "-c",
+                        "notify-send -t 2000 \"Scratchpad\" " + JSON.stringify(rest)])
+                }
+            } else if (item.kind === "newnote") {
+                var nm = root.query.trim().replace(/^\/nt\s*/i, "")
+                NotesService.createNote(nm !== "" ? nm : NotesService.timestampName(), "")
+                NotesService.open = true
+            } else if (item.kind === "newclip") {
+                NotesService.newNoteFromClipboard()
+                NotesService.open = true
+            }
         }
         close()
     }
@@ -588,6 +649,7 @@ PanelWindow {
                             { id: "kaomoji",  label: "\u{f0e9f}  Kaomoji" },
                             { id: "pass",     label: "\u{f0585}  Pass" },
                             { id: "ssh",      label: "\u{f0c00}  SSH" },
+                            { id: "notes",    label: "\u{f0f6}  Notes" },
                         ]
                         delegate: Rectangle {
                             required property var modelData
@@ -641,6 +703,7 @@ PanelWindow {
                                 : root.mode === "kaomoji"  ? "\u{f0e9f}"
                                 : root.mode === "pass"     ? "\u{f0585}"
                                 : root.mode === "ssh"      ? "\u{f0c00}"
+                                : root.mode === "notes"    ? "\u{f0f6}"
                                 : root.mode === "calc"     ? "\u{f1065}"
                                 : "\u{f02d}"
                             color: Theme.primary
@@ -677,9 +740,15 @@ PanelWindow {
                                     root.deleteClip(root.results[root.selectedIdx])
                                     event.accepted = true
                                 } else if (event.key === Qt.Key_Tab) {
-                                    var modes = ["apps","clip","emoji","calc","words","kaomoji","pass","ssh"]
-                                    var i = modes.indexOf(root.mode)
-                                    root.mode = modes[(i + 1) % modes.length]
+                                    if (root.mode === "notes") {
+                                        // Notes is its own context: Tab walks the list
+                                        // instead of dumping you into another mode.
+                                        root.selectedIdx = Math.min(root.selectedIdx + 1, root.results.length - 1)
+                                    } else {
+                                        var modes = ["apps","clip","emoji","calc","words","kaomoji","pass","ssh","notes"]
+                                        var i = modes.indexOf(root.mode)
+                                        root.mode = modes[(i + 1) % modes.length]
+                                    }
                                     event.accepted = true
                                 }
                             }
@@ -858,6 +927,7 @@ PanelWindow {
                                     if (root.mode === "kaomoji")  return modelData.tags || ""
                                     if (root.mode === "pass")     return (root.passOtpActive ? "\u{f0585}  " : "\u{f033e}  ") + modelData.entry
                                     if (root.mode === "ssh")      return "\u{f0c00}  " + modelData.host
+                                    if (root.mode === "notes")    return (modelData.pinned ? "\u{f08d}  " : "\u{f0f6}  ") + modelData.name
                                     if (root.mode === "clip")  return (modelData.kind === "image")
                                         ? (modelData.mime || "image") + "  " + (modelData.line.split("\t")[0] || "")
                                         : modelData.preview
@@ -890,6 +960,18 @@ PanelWindow {
                             Text {
                                 visible: root.mode === "ssh" && (modelData.hostname || modelData.user)
                                 text: (modelData.user ? modelData.user + "@" : "") + (modelData.hostname || modelData.host)
+                                color: Theme.surfaceTextDim
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelSmall
+                            }
+
+                            Text {
+                                visible: root.mode === "notes" && modelData.kind !== undefined
+                                text: modelData.kind === "scratchpad" ? "open scratchpad"
+                                    : modelData.kind === "note" ? (modelData.pinned ? "pinned · open" : "open")
+                                    : modelData.kind === "addscratch" ? "append line"
+                                    : modelData.kind === "newnote" ? "create + open"
+                                    : "from clipboard"
                                 color: Theme.surfaceTextDim
                                 font.family: Theme.fontFamily
                                 font.pointSize: Theme.labelSmall
@@ -964,6 +1046,7 @@ PanelWindow {
                                 : root.mode === "kaomoji"  ? (root.kaomojiCat === "all" ? "No kaomoji found" : "No kaomoji in " + root.kaomojiCat)
                                 : root.mode === "pass"     ? (loadPass.running ? "Loading pass store…" : (root.allPass.length === 0 ? "No password store found" : "No matches"))
                                 : root.mode === "ssh"      ? (loadSsh.running ? "Loading hosts…" : (root.allSsh.length === 0 ? "No hosts in ~/.ssh/config" : "No matches"))
+                                : root.mode === "notes"    ? (root.query === "" ? "No notes yet — /nt <text> to dump one" : "No notes match")
                                 : root.mode === "words"    ? (root.query === "" ? "Type to search" : "No matches")
                                 : ""
                             color: Theme.surfaceTextDim
@@ -1050,6 +1133,8 @@ PanelWindow {
                         ? "↑↓ navigate  ·  enter copy  ·  tab switch mode  ·  esc close"
                         : root.mode === "ssh"
                         ? "↑↓ navigate  ·  enter connect  ·  esc close"
+                        : root.mode === "notes"
+                        ? "enter open  ·  /nt <text> append / new note  ·  esc close"
                         : "↑↓ / jk navigate  ·  enter select  ·  tab switch mode  ·  esc close"
                     color: Theme.surfaceTextDim
                     font.family: Theme.fontFamily

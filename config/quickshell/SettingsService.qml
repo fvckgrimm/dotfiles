@@ -52,6 +52,12 @@ Scope {
     property string profileImage: ""
     property string profileBanner: ""
 
+    // Notes system: directory holding the plain-text note files, the file
+    // extension appended to note names, and the glyph shown in launcher/panel.
+    property string notesDir: "~/Documents/Notes"
+    property string notesExtension: "md"
+    property string notesGlyph: "\u{f0f6}"
+
     // Resolved profile art from standard files: ~/.face* (avatar) and
     // ~/.banner* (banner background). Detected at startup (and re-probed
     // periodically so files can be hot-swapped while the shell is running);
@@ -324,6 +330,9 @@ Scope {
                     if (obj.dynamicWallpaper !== undefined) root.dynamicWallpaper = obj.dynamicWallpaper;
                     if (obj.profileImage !== undefined) root.profileImage = obj.profileImage;
                     if (obj.profileBanner !== undefined) root.profileBanner = obj.profileBanner;
+                    if (obj.notesDir !== undefined) root.notesDir = obj.notesDir;
+                    if (obj.notesExtension !== undefined) root.notesExtension = obj.notesExtension;
+                    if (obj.notesGlyph !== undefined) root.notesGlyph = obj.notesGlyph;
                     if (obj.barLayout && obj.barLayout.left && obj.barLayout.center && obj.barLayout.right) root.barLayout = obj.barLayout;
                 } catch (e) {
                     console.log("Error loading quickshell settings: " + e);
@@ -369,6 +378,9 @@ Scope {
             "dynamicWallpaper": root.toPortable(root.dynamicWallpaper),
             "profileImage": root.profileImage,
             "profileBanner": root.profileBanner,
+            "notesDir": root.notesDir,
+            "notesExtension": root.notesExtension,
+            "notesGlyph": root.notesGlyph,
             "barLayout": root.barLayout
         };
         var json = JSON.stringify(obj);
@@ -500,6 +512,9 @@ Scope {
     onDynamicWallpaperChanged: save()
     onProfileImageChanged: save()
     onProfileBannerChanged: save()
+    onNotesDirChanged: save()
+    onNotesExtensionChanged: save()
+    onNotesGlyphChanged: save()
     onThemeChanged: {
         Theme.currentTheme = root.theme
         save()
