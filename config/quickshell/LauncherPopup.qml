@@ -5,8 +5,13 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 
+import "KaomojiDb.js" as KaomojiDb
+
 // Full launcher — centered overlay
-// Modes: apps | clip | emoji | calc | words
+// Modes: apps | clip | emoji | calc | words | kaomoji | pass | ssh
+// Slash-prefix routing works in any mode: /kao, /pass, /ssh (also /apps, /clip,
+// /emoji, /calc, /words) — typing the prefix switches mode and the rest becomes
+// the query. In pass mode a leading `otp` token switches to pass-otp copying.
 PanelWindow {
     id: root
 
@@ -29,23 +34,33 @@ PanelWindow {
     property var    results: []
     property int    selectedIdx: 0
     property bool   calcResult: false
-    property string clipFilter: "all"  // all | text | image | link
+    property string clipFilter: "all"    // all | text | image | link
+    property string kaomojiCat: "all"    // all | one of KaomojiDb.categories
+    property bool   passOtp: false       // copy mode: pass -c vs pass otp -c
+    readonly property string termCmd: "alacritty"     // terminal for ssh + gpg unlock fallback
+    readonly property string sshArgs: ""             // extra args appended to every ssh command
 
     onModeChanged: {
         query = ""
         results = []
         selectedIdx = 0
         clipFilter = "all"
+        kaomojiCat = "all"
+        passOtp = false
         calcResult = false
         searchInput.forceActiveFocus()
         if (mode === "clip")   loadClip.running = true
         if (mode === "emoji")  loadEmoji.running = true
         if (mode === "words")  loadWords.running = true
         if (mode === "apps")   loadApps.running = true
+        if (mode === "pass")   loadPass.running = true
+        if (mode === "ssh")    loadSsh.running = true
+        if (mode === "kaomoji") { root.allKaomoji = KaomojiDb.entries; root.filterResults() }
     }
 
     onQueryChanged: {
         selectedIdx = 0
+        if (root.routePrefix()) return
         if (mode === "calc" && query !== "") runCalc.running = true
         else if (mode === "calc") results = []
         else if (mode === "words") { loadWords.running = false; Qt.callLater(() => { loadWords.running = true }) }
@@ -56,13 +71,60 @@ PanelWindow {
     property var allClip:   []
     property var allEmoji:  []
     property var allWords:  []
+    property var allKaomoji: []
+    property var allPass:   []
+    property var allSsh:    []
+
+    // `/cmd rest` — switch to the matching mode and drop the prefix from the query.
+    // When already in that mode just strip the prefix. Returns true when consumed.
+    function routePrefix() {
+        var m = /^\/(\w+)(?:\s*(.*))?$/.exec(root.query)
+        if (!m) return false
+        var cmd = m[1].toLowerCase()
+        var rest = m[2] || ""
+        var target = {
+            kao: "kaomoji", kaomoji: "kaomoji", pass: "pass", ssh: "ssh",
+            app: "apps", apps: "apps", clip: "clip", emoji: "emoji",
+            calc: "calc", word: "words", words: "words"
+        }[cmd]
+        if (!target) return false
+        if (target === root.mode) {
+            root.query = rest
+            return true
+        }
+        root.mode = target
+        Qt.callLater(() => { if (root.mode === target) root.query = rest })
+        return true
+    }
+
+    // In pass mode the query can start with an `otp` token (`/pass otp github`);
+    // the rest is the actual search text. Mirrors the pass plugin semantics.
+    function passSearchText() {
+        var q = root.query.trim()
+        if (/^otp(?:\s|$)/i.test(q)) return q.replace(/^otp\s*/i, "").trim()
+        return q
+    }
+
+    readonly property bool passOtpActive: root.mode === "pass"
+        && (root.passOtp || /^otp(?:\s|$)/i.test(root.query.trim()))
+
+    readonly property var kaomojiChips: KaomojiDb.categories.map(c => ({ id: c, label: c }))
+
+    readonly property var filterChips: root.mode === "clip"
+        ? [{ id: "all", label: "All" }, { id: "text", label: "Text" }, { id: "image", label: "Images" }, { id: "link", label: "Links" }]
+        : root.mode === "kaomoji" ? [{ id: "all", label: "All" }].concat(root.kaomojiChips)
+        : root.mode === "pass" ? [{ id: "all", label: "Passwords" }, { id: "otp", label: "OTP" }]
+        : []
 
     function filterResults() {
-        var q = query.toLowerCase().trim()
-        var src = mode === "apps"  ? allApps
-                : mode === "clip"  ? (clipFilter === "all" ? allClip : allClip.filter(it => it.kind === clipFilter))
-                : mode === "emoji" ? allEmoji
-                : mode === "words" ? allWords
+        var q = root.mode === "pass" ? root.passSearchText().toLowerCase() : query.toLowerCase().trim()
+        var src = mode === "apps"    ? allApps
+                : mode === "clip"    ? (clipFilter === "all" ? allClip : allClip.filter(it => it.kind === clipFilter))
+                : mode === "emoji"   ? allEmoji
+                : mode === "kaomoji" ? (kaomojiCat === "all" ? allKaomoji : allKaomoji.filter(k => k.cat === kaomojiCat))
+                : mode === "pass"    ? allPass
+                : mode === "ssh"     ? allSsh
+                : mode === "words"   ? allWords
                 : []
         if (q === "") {
             results = src.slice(0, mode === "apps" ? src.length : 100)
@@ -70,10 +132,24 @@ PanelWindow {
             results = src.filter(item => {
                 var text = typeof item === "string" ? item
                     : mode === "clip" ? (item.text || "")
+                    : mode === "kaomoji" ? (item.ch + " " + item.tags + " " + item.cat)
+                    : mode === "pass" ? item.entry
+                    : mode === "ssh" ? (item.host + " " + (item.hostname || "") + " " + (item.user || ""))
                     : (item.name + " " + (item.keywords || ""))
                 return text.toLowerCase().includes(q)
             }).slice(0, mode === "apps" ? 500 : 100)
         }
+    }
+
+    // Try to copy with pass non-interactively; if gpg needs an unlock passphrase
+    // the command fails (exit != 0) and we reopen it inside a terminal so the
+    // pinentry can prompt. Only paths/titles are ever touched by the launcher.
+    function copyPass(entry) {
+        var cmd = root.passOtpActive ? "pass otp -c " : "pass -c "
+        passCopyProc.pendingEntry = entry
+        passCopyProc.pendingOtp = root.passOtpActive
+        passCopyProc.command = ["bash", "-c", cmd + JSON.stringify(entry) + " >/dev/null 2>&1"]
+        passCopyProc.running = true
     }
 
     function activate(item) {
@@ -100,6 +176,14 @@ PanelWindow {
             }
         } else if (mode === "emoji") {
             Quickshell.execDetached(["bash", "-c", "printf '%s' " + JSON.stringify(item.char) + " | wl-copy"])
+        } else if (mode === "kaomoji") {
+            Quickshell.execDetached(["bash", "-c",
+                "printf '%s' " + JSON.stringify(item.ch) + " | wl-copy && notify-send -t 2000 \"Kaomoji copied\" " + JSON.stringify(item.ch)])
+        } else if (mode === "pass") {
+            root.copyPass(item.entry)
+        } else if (mode === "ssh") {
+            Quickshell.execDetached([root.termCmd, "-e", "bash", "-lc",
+                "ssh " + root.sshArgs + " " + JSON.stringify(item.host)])
         } else if (mode === "calc") {
             Quickshell.execDetached(["bash", "-c",
                 "printf '%s' " + JSON.stringify(item) + " | wl-copy && notify-send -t 2000 \"Copied\" " + JSON.stringify(item)])
@@ -340,6 +424,110 @@ PanelWindow {
         onRunningChanged: { if (running) root.allWords = []; else root.filterResults() }
     }
 
+    // Index non-hidden *.gpg paths under $PASSWORD_STORE_DIR (default
+    // ~/.password-store), relative to the store root. Only file names are
+    // read — decrypted secrets are never touched by the launcher.
+    Process {
+        id: loadPass
+        command: ["bash", "-c",
+            "store=\"${PASSWORD_STORE_DIR:-$HOME/.password-store}\"; " +
+            "find \"$store\" -name '*.gpg' -not -name '.*' 2>/dev/null | " +
+            "sed 's|^\\./||' | sed \"s|^$store/||; s|\\.gpg$||\" | sort"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                var e = data.trim()
+                if (!e || e.startsWith(".")) return
+                var s = root.allPass.slice()
+                s.push({ entry: e })
+                root.allPass = s
+            }
+        }
+        onRunningChanged: { if (running) root.allPass = []; else root.filterResults() }
+    }
+
+    // Re-scan the password store every 30s while the pass mode is open so
+    // new entries show up without reopening the launcher.
+    Timer {
+        id: passRefresh
+        interval: 30000
+        running: root.visible && root.mode === "pass"
+        repeat: true
+        onTriggered: loadPass.running = true
+    }
+
+    // Copy a pass entry: run non-interactively first, then if it failed
+    // (typically gpg locked and needs an unlock passphrase) reopen the same
+    // command in a terminal so the pinentry can prompt interactively.
+    Process {
+        id: passCopyProc
+        property string pendingEntry: ""
+        property bool pendingOtp: false
+        running: false
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0 && passCopyProc.pendingEntry !== "") {
+                var cmd = (passCopyProc.pendingOtp ? "pass otp -c " : "pass -c ") + JSON.stringify(passCopyProc.pendingEntry)
+                Quickshell.execDetached([root.termCmd, "-e", "bash", "-lc", cmd])
+            }
+            passCopyProc.pendingEntry = ""
+        }
+    }
+
+    // Parse simple Host entries from ~/.ssh/config. Wildcards (Host *)
+    // and Include/Match blocks are ignored; HostName/User/Port from the
+    // enclosing block are attached for display/filtering.
+    Process {
+        id: loadSsh
+        command: [
+            "python3", "-c",
+            "import os, sys\n" +
+            "p = os.path.expanduser('~/.ssh/config')\n" +
+            "try: lines = open(p, errors='replace')\n" +
+            "except OSError: sys.exit(0)\n" +
+            "hosts = []\n" +
+            "cur = None\n" +
+            "for raw in lines:\n" +
+            "    line = raw.split('#', 1)[0].strip()\n" +
+            "    if not line: continue\n" +
+            "    low = line.lower()\n" +
+            "    if low.startswith('host ') or low.startswith('match'):\n" +
+            "        cur = None\n" +
+            "        if low.startswith('host '):\n" +
+            "            for a in line.split()[1:]:\n" +
+            "                if '*' in a or '?' in a: continue\n" +
+            "                h = {'host': a}\n" +
+            "                hosts.append(h)\n" +
+            "                cur = h\n" +
+            "        continue\n" +
+            "    if cur is None: continue\n" +
+            "    if '=' in line:\n" +
+            "        k, v = line.split('=', 1)\n" +
+            "    else:\n" +
+            "        parts = line.split(None, 1)\n" +
+            "        k = parts[0] if parts else ''\n" +
+            "        v = parts[1] if len(parts) > 1 else ''\n" +
+            "    k = k.strip().lower()\n" +
+            "    v = v.strip()\n" +
+            "    if k in ('hostname', 'user', 'port'):\n" +
+            "        cur[k] = v\n" +
+            "for h in hosts:\n" +
+            "    print('SSH:' + h['host'] + '|SEP|' + (h.get('hostname','') or '') + '|SEP|' + (h.get('user','') or '') + '|SEP|' + (h.get('port','') or ''))"
+        ]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                if (!data.startsWith("SSH:")) return
+                var parts = data.slice(4).split("|SEP|")
+                if (parts.length >= 1 && parts[0].trim() !== "") {
+                    var s = root.allSsh.slice()
+                    s.push({ host: parts[0].trim(), hostname: (parts[1] || "").trim(), user: (parts[2] || "").trim(), port: (parts[3] || "").trim() })
+                    root.allSsh = s
+                }
+            }
+        }
+        onRunningChanged: { if (running) root.allSsh = []; else root.filterResults() }
+    }
+
     Process {
         id: runCalc
         command: [
@@ -392,11 +580,14 @@ PanelWindow {
 
                     Repeater {
                         model: [
-                            { id: "apps",  label: "\u{f0349}  Apps" },
-                            { id: "clip",  label: "\u{f0179}  Clip" },
-                            { id: "emoji", label: "\u{f0e02}  Emoji" },
-                            { id: "calc",  label: "\u{f1065}  Calc" },
-                            { id: "words", label: "\u{f02d}   Words" },
+                            { id: "apps",     label: "\u{f0349}  Apps" },
+                            { id: "clip",     label: "\u{f0179}  Clip" },
+                            { id: "emoji",    label: "\u{f0e02}  Emoji" },
+                            { id: "calc",     label: "\u{f1065}  Calc" },
+                            { id: "words",    label: "\u{f02d}   Words" },
+                            { id: "kaomoji",  label: "\u{f0e9f}  Kaomoji" },
+                            { id: "pass",     label: "\u{f0585}  Pass" },
+                            { id: "ssh",      label: "\u{f0c00}  SSH" },
                         ]
                         delegate: Rectangle {
                             required property var modelData
@@ -444,10 +635,13 @@ PanelWindow {
                         spacing: Theme.spacingSm
 
                         Text {
-                            text: root.mode === "apps"  ? "\u{f0349}"
-                                : root.mode === "clip"  ? "\u{f0179}"
-                                : root.mode === "emoji" ? "\u{f0e02}"
-                                : root.mode === "calc"  ? "\u{f1065}"
+                            text: root.mode === "apps"     ? "\u{f0349}"
+                                : root.mode === "clip"     ? "\u{f0179}"
+                                : root.mode === "emoji"    ? "\u{f0e02}"
+                                : root.mode === "kaomoji"  ? "\u{f0e9f}"
+                                : root.mode === "pass"     ? "\u{f0585}"
+                                : root.mode === "ssh"      ? "\u{f0c00}"
+                                : root.mode === "calc"     ? "\u{f1065}"
                                 : "\u{f02d}"
                             color: Theme.primary
                             font.family: Theme.fontFamily
@@ -483,7 +677,7 @@ PanelWindow {
                                     root.deleteClip(root.results[root.selectedIdx])
                                     event.accepted = true
                                 } else if (event.key === Qt.Key_Tab) {
-                                    var modes = ["apps","clip","emoji","calc","words"]
+                                    var modes = ["apps","clip","emoji","calc","words","kaomoji","pass","ssh"]
                                     var i = modes.indexOf(root.mode)
                                     root.mode = modes[(i + 1) % modes.length]
                                     event.accepted = true
@@ -501,22 +695,33 @@ PanelWindow {
                     }
                 }
 
-                // Clipboard type filter (clip mode only)
+                // Category/type filter bar (clip / kaomoji / pass modes).
+                // Horizontally scrollable so the kaomoji category list can
+                // overflow the card without wrapping.
                 RowLayout {
                     Layout.fillWidth: true
-                    visible: root.mode === "clip"
+                    visible: root.mode === "clip" || root.mode === "kaomoji" || root.mode === "pass"
                     spacing: Theme.spacingSm
 
-                    Repeater {
-                        model: [
-                            { id: "all",   label: "All" },
-                            { id: "text",  label: "Text" },
-                            { id: "image", label: "Images" },
-                            { id: "link",  label: "Links" },
-                        ]
+                    ListView {
+                        id: filterBar
+                        Layout.fillWidth: true
+                        height: 26
+                        orientation: ListView.Horizontal
+                        clip: true
+                        spacing: Theme.spacingSm
+                        model: root.filterChips
+                        ScrollBar.horizontal: ScrollBar {
+                            policy: ScrollBar.AsNeeded
+                            parent: filterBar
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        }
+
                         delegate: Rectangle {
                             required property var modelData
-                            readonly property bool active: root.clipFilter === modelData.id
+                            readonly property bool active: root.mode === "clip" ? root.clipFilter === modelData.id
+                                : root.mode === "kaomoji" ? root.kaomojiCat === modelData.id
+                                : root.passOtpActive === (modelData.id === "otp")
                             height: 24
                             width: chipLabel.implicitWidth + Theme.spacingLg
                             radius: Theme.radiusMd
@@ -538,17 +743,16 @@ PanelWindow {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    root.clipFilter = modelData.id
-                                    root.selectedIdx = 0
-                                    root.filterResults()
+                                    if (root.mode === "clip") { root.clipFilter = modelData.id; root.selectedIdx = 0; root.filterResults() }
+                                    else if (root.mode === "kaomoji") { root.kaomojiCat = modelData.id; root.selectedIdx = 0; root.filterResults() }
+                                    else root.passOtp = (modelData.id === "otp")
                                 }
                             }
                         }
                     }
 
-                    Item { Layout.fillWidth: true }
-
                     Text {
+                        visible: root.mode === "clip"
                         text: root.allClip.length + " items"
                         color: Theme.surfaceTextDim
                         font.family: Theme.fontFamily
@@ -630,6 +834,13 @@ PanelWindow {
                                 color: Theme.surfaceText
                             }
 
+                            Text {
+                                visible: root.mode === "kaomoji"
+                                text: (root.mode === "kaomoji" && modelData.ch) ? modelData.ch : ""
+                                font.pointSize: Theme.titleLarge
+                                color: Theme.surfaceText
+                            }
+
                             Image {
                                 visible: root.mode === "clip" && modelData.kind === "image" && !!modelData.img
                                 width: 28; height: 28
@@ -642,8 +853,11 @@ PanelWindow {
                             Text {
                                 Layout.fillWidth: true
                                 text: {
-                                    if (root.mode === "apps")  return modelData.name || ""
-                                    if (root.mode === "emoji") return modelData.keywords || ""
+                                    if (root.mode === "apps")     return modelData.name || ""
+                                    if (root.mode === "emoji")    return modelData.keywords || ""
+                                    if (root.mode === "kaomoji")  return modelData.tags || ""
+                                    if (root.mode === "pass")     return (root.passOtpActive ? "\u{f0585}  " : "\u{f033e}  ") + modelData.entry
+                                    if (root.mode === "ssh")      return "\u{f0c00}  " + modelData.host
                                     if (root.mode === "clip")  return (modelData.kind === "image")
                                         ? (modelData.mime || "image") + "  " + (modelData.line.split("\t")[0] || "")
                                         : modelData.preview
@@ -655,6 +869,30 @@ PanelWindow {
                                 font.pointSize: Theme.labelLarge
                                 elide: Text.ElideRight
                                 wrapMode: Text.NoWrap
+                            }
+
+                            Text {
+                                visible: root.mode === "kaomoji"
+                                text: modelData.cat || ""
+                                color: Theme.secondary
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelSmall
+                            }
+
+                            Text {
+                                visible: root.mode === "pass"
+                                text: root.passOtpActive ? "otp · enter to copy" : "enter to copy"
+                                color: Theme.surfaceTextDim
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelSmall
+                            }
+
+                            Text {
+                                visible: root.mode === "ssh" && (modelData.hostname || modelData.user)
+                                text: (modelData.user ? modelData.user + "@" : "") + (modelData.hostname || modelData.host)
+                                color: Theme.surfaceTextDim
+                                font.family: Theme.fontFamily
+                                font.pointSize: Theme.labelSmall
                             }
 
                             Text {
@@ -720,10 +958,13 @@ PanelWindow {
                         visible: root.results.length === 0 && root.mode !== "calc"
                         Text {
                             anchors.centerIn: parent
-                            text: root.mode === "apps"  ? "No apps found"
-                                : root.mode === "clip"  ? (root.allClip.length === 0 ? "Clipboard is empty" : "No matches")
-                                : root.mode === "emoji" ? "Loading emoji..."
-                                : root.mode === "words" ? (root.query === "" ? "Type to search" : "No matches")
+                            text: root.mode === "apps"     ? "No apps found"
+                                : root.mode === "clip"     ? (root.allClip.length === 0 ? "Clipboard is empty" : "No matches")
+                                : root.mode === "emoji"    ? "Loading emoji..."
+                                : root.mode === "kaomoji"  ? (root.kaomojiCat === "all" ? "No kaomoji found" : "No kaomoji in " + root.kaomojiCat)
+                                : root.mode === "pass"     ? (loadPass.running ? "Loading pass store…" : (root.allPass.length === 0 ? "No password store found" : "No matches"))
+                                : root.mode === "ssh"      ? (loadSsh.running ? "Loading hosts…" : (root.allSsh.length === 0 ? "No hosts in ~/.ssh/config" : "No matches"))
+                                : root.mode === "words"    ? (root.query === "" ? "Type to search" : "No matches")
                                 : ""
                             color: Theme.surfaceTextDim
                             font.family: Theme.fontFamily
@@ -803,6 +1044,12 @@ PanelWindow {
                     Layout.alignment: Qt.AlignHCenter
                     text: root.mode === "clip"
                         ? "↑↓ navigate  ·  enter copy  ·  del or ✕ remove  ·  tab switch mode  ·  esc close"
+                        : root.mode === "pass"
+                        ? "↑↓ navigate  ·  enter copy  ·  /pass otp <q> copies TOTP  ·  esc close"
+                        : root.mode === "kaomoji"
+                        ? "↑↓ navigate  ·  enter copy  ·  tab switch mode  ·  esc close"
+                        : root.mode === "ssh"
+                        ? "↑↓ navigate  ·  enter connect  ·  esc close"
                         : "↑↓ / jk navigate  ·  enter select  ·  tab switch mode  ·  esc close"
                     color: Theme.surfaceTextDim
                     font.family: Theme.fontFamily

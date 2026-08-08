@@ -6,7 +6,7 @@ Scope {
     id: root
 
     property bool open: false
-    property string mode: "apps"   // "apps" | "clip" | "emoji" | "calc" | "words"
+    property string mode: "apps"   // "apps" | "clip" | "emoji" | "calc" | "words" | "kaomoji" | "pass" | "ssh"
 
     function toggle() { root.open = !root.open }
     function show()   { root.open = true }

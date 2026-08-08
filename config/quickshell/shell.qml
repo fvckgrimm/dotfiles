@@ -13,7 +13,7 @@ ShellRoot {
     }
     // qs ipc call launcher show
     // qs ipc call launcher toggle
-    // qs ipc call launcher showMode "apps"   (also: calc, clip, emoji, words)
+    // qs ipc call launcher showMode "apps"   (also: calc, clip, emoji, words, kaomoji, pass, ssh)
     IpcHandler {
         target: "launcher"
         function show()      { LauncherService.show() }
@@ -23,6 +23,9 @@ ShellRoot {
         function emoji()     { LauncherService.showMode("emoji") }
         function calc()      { LauncherService.showMode("calc") }
         function words()     { LauncherService.showMode("words") }
+        function kaomoji()   { LauncherService.showMode("kaomoji") }
+        function pass()      { LauncherService.showMode("pass") }
+        function ssh()       { LauncherService.showMode("ssh") }
     }
     // qs ipc call todo toggle
     IpcHandler {
