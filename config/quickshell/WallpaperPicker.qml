@@ -70,7 +70,7 @@ PanelWindow {
         background: "#12161d", surface: "#161b23", surfaceContainer: "#1b212b",
         surfaceContainerLow: "#161b23", surfaceContainerHigh: "#212836",
         surfaceContainerLowest: "#0a0d12", outline: "#3a4354",
-        primary: "#7dd8ff", primaryText: "#00303f",
+        outlineVariant: "#2a3140", primary: "#7dd8ff", primaryText: "#00303f",
         secondary: "#e3b872", tertiary: "#c9a8f0", success: "#7ee0a8",
         surfaceText: "#e2e6ee", surfaceTextVariant: "#98a2b8", surfaceTextDim: "#5c6579"
     }

@@ -161,7 +161,6 @@ Scope {
             urgency: opts.urgency ?? 1,
             time:    Qt.formatTime(new Date(), "hh:mm"),
             actions: [],
-            raw:     null,
             local:   true
         }
         var list = root.notifications.slice()

@@ -56,6 +56,10 @@ PopupWindow {
         }
     }
 
+    onTabChanged: {
+        if (visible && tab === "notifs") NotificationService.markAllRead()
+    }
+
     // ── Calendar state ──────────────────────────────────────────────────
     property int displayYear:  new Date().getFullYear()
     property int displayMonth: new Date().getMonth()
@@ -101,6 +105,8 @@ PopupWindow {
     property int timerTotal: 0
     property int timerLeft: 0
     property bool timerRunning: false
+    property int timerInputMin: 3
+    property int timerInputSec: 0
 
     // ── At-a-glance state (for coloring) ──────────────────────────────────
     property int tempC: 0
@@ -247,10 +253,10 @@ PopupWindow {
             body: "Your " + root.fmtTimer(root.timerTotal) + " countdown is up.",
             urgency: 2
         })
-        // Try a few system sounds + players, in order of availability.
+        // Play a softer chime at reduced volume; falls back through players.
         Quickshell.execDetached(["bash", "-c",
-            "for s in /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga /usr/share/sounds/freedesktop/stereo/complete.oga /usr/share/sounds/Oxygen-Sys-Long.ogg; do " +
-            "[ -f \"$s\" ] && { paplay \"$s\" 2>/dev/null || pw-play \"$s\" 2>/dev/null || aplay \"$s\" 2>/dev/null; break; }; done"])
+            "for s in /usr/share/sounds/freedesktop/stereo/complete.oga /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga /usr/share/sounds/Oxygen-Sys-Long.ogg; do " +
+            "[ -f \"$s\" ] && { paplay --volume=26214 \"$s\" 2>/dev/null || pw-play --volume=0.4 \"$s\" 2>/dev/null || aplay \"$s\" 2>/dev/null; break; }; done"])
     }
 
     function fmtTimer(s) {
@@ -1551,14 +1557,48 @@ Tap + add to create one" : "No tasks for this day"
                                             implicitHeight: 28; radius: Theme.radiusSm
                                             color: minusMa.containsMouse ? Theme.withAlpha(Theme.error, 0.2) : Theme.surfaceContainerHigh
                                             Text { anchors.centerIn: parent; text: "−"; color: Theme.surfaceText; font.pointSize: Theme.titleMedium; font.bold: true }
-                                            MouseArea { id: minusMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.timerLeft = Math.max(0, root.timerLeft - 60) }
+                                            MouseArea { id: minusMa; anchors.fill: parent; hoverEnabled: true; onClicked: { root.timerLeft = Math.max(0, root.timerLeft - 60); root.timerTotal = Math.max(root.timerLeft, root.timerTotal - 60) } }
                                         }
                                         Rectangle {
                                             Layout.preferredWidth: 28; Layout.fillHeight: true
                                             implicitHeight: 28; radius: Theme.radiusSm
                                             color: plusMa.containsMouse ? Theme.withAlpha(Theme.success, 0.2) : Theme.surfaceContainerHigh
                                             Text { anchors.centerIn: parent; text: "+"; color: Theme.surfaceText; font.pointSize: Theme.titleMedium; font.bold: true }
-                                            MouseArea { id: plusMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.timerLeft = Math.min(3599, root.timerLeft + 60) }
+                                            MouseArea { id: plusMa; anchors.fill: parent; hoverEnabled: true; onClicked: { root.timerTotal = Math.min(3600, root.timerTotal + 60); root.timerLeft = Math.min(3600, root.timerLeft + 60) } }
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Theme.spacingSm
+
+                                        TimeSpinner {
+                                            Layout.preferredWidth: 72
+                                            value: root.timerInputMin; min: 0; max: 59
+                                            onValueChanged: root.timerInputMin = value
+                                        }
+                                        Text {
+                                            text: ":"
+                                            color: Theme.surfaceTextVariant
+                                            font.family: Theme.fontFamily; font.pointSize: Theme.titleMedium; font.bold: true
+                                        }
+                                        TimeSpinner {
+                                            Layout.preferredWidth: 72
+                                            value: root.timerInputSec; min: 0; max: 59; step: 5
+                                            onValueChanged: root.timerInputSec = value
+                                        }
+                                        Rectangle {
+                                            Layout.fillWidth: true; Layout.fillHeight: true
+                                            Layout.minimumWidth: 96
+                                            implicitHeight: 28; radius: Theme.radiusSm
+                                            color: setMa.containsMouse ? Theme.withAlpha(Theme.primary, 0.2) : Theme.surfaceContainerHigh
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "Set"
+                                                color: Theme.primary
+                                                font.family: Theme.fontFamily; font.pointSize: Theme.labelLarge; font.bold: true
+                                            }
+                                            MouseArea { id: setMa; anchors.fill: parent; hoverEnabled: true; onClicked: root.startTimer(root.timerInputMin * 60 + root.timerInputSec) }
                                         }
                                     }
 

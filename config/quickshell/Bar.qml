@@ -35,7 +35,7 @@ PanelWindow {
     }
 
     function toggleDashboard(t) {
-        if (dashboard.visible && dashboard.tab === t) dashboard.visible = false
+        if (dashboard.visible) dashboard.visible = false
         else dashboard.openTab(t)
     }
 
@@ -120,7 +120,11 @@ PanelWindow {
             Component { id: compNetwork; NetworkWidget { visible: SettingsService.showNetwork } }
             Component { id: compMedia;   MediaWidget { barWindow: bar; visible: SettingsService.showMedia } }
 
-            Component { id: compClock; ClockWidget { onClockClicked: bar.toggleDashboard("calendar") } }
+            Component { id: compClock; ClockWidget {
+                timerText: (dashboard.timerRunning || dashboard.timerLeft > 0) ? dashboard.fmtTimer(dashboard.timerLeft) : ""
+                onClockClicked: bar.toggleDashboard("calendar")
+                onClockRightClicked: bar.toggleDashboard("home")
+            } }
 
             Component { id: compControlCenter; BarButton {
                 text: "󰒓"
