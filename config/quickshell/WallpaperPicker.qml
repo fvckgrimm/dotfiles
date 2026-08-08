@@ -211,6 +211,8 @@ PanelWindow {
             d.splice(idx, 1)
             SettingsService.wallpaperDirs = d
         }
+        // A removed dir must not linger in the recursive scan list.
+        if (SettingsService.isRecursive(path)) SettingsService.setRecursive(path, false)
         if (root.currentPath === path) root.loadFavorites()
     }
 
