@@ -1,0 +1,591 @@
+# ============================================================
+
+# AeroSpace configuration
+
+# ~/.aerospace.toml
+
+#
+
+# Based on my old Yabai + skhd configuration.
+
+#
+
+# Main keymap:
+
+#
+
+# CTRL + ALT + A/D/S/W     Focus
+
+# CTRL + SHIFT + A/D/S/W   Move
+
+# CTRL + A/D/S/W           Resize
+
+#
+
+# CTRL + ALT + 1-9/0       Workspaces
+
+# CTRL + ALT + SHIFT + 1-9/0
+
+# Move window to workspace
+
+#
+
+# CTRL + SPACE             Float / Tile
+
+# CTRL + F                 Fullscreen
+
+# CTRL + H                 Float / Tile
+
+# CTRL + K                 Balance
+
+# CTRL + L                 Rotate orientation
+
+#
+
+# CMD + ENTER              Kitty
+
+# CMD + T                  Finder
+
+#
+
+# macOS handles screenshots natively:
+
+# CMD + SHIFT + 3           Full screen
+
+# CMD + SHIFT + 4           Region
+
+# CMD + SHIFT + 5           Screenshot UI
+
+#
+
+# ============================================================
+
+# ============================================================
+
+# GENERAL
+
+# ============================================================
+
+config-version = 2
+
+start-at-login = true
+
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+
+automatically-unhide-macos-hidden-apps = true
+
+key-mapping.preset = 'qwerty'
+
+focus-follows-mouse.enabled = true
+# ============================================================
+
+# MONITOR / MOUSE
+
+# ============================================================
+
+# Put the mouse in the center of the focused monitor when
+
+# switching monitors.
+
+#
+
+# This is the AeroSpace-supported way to make the mouse follow
+
+# monitor focus.
+
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# ============================================================
+
+# WORKSPACES
+
+# ============================================================
+
+# Keep the same 1-10 workspace model as my old Yabai setup.
+
+#
+
+# 1 = main
+
+# 2 = terminal
+
+# 3 = editors
+
+# 4 = music
+
+# 5 = general
+
+# 6 = immersion
+
+# 7 = anki
+
+# 8 = terminal / secondary
+
+# 9 = general
+
+# 10 = general
+
+persistent-workspaces = [
+"1",
+"2",
+"3",
+"4",
+"5",
+"6",
+"7",
+"8",
+"9",
+"10"
+]
+
+# ============================================================
+
+# GAPS
+
+# ============================================================
+
+# Old Yabai:
+
+#
+
+# top    = 8
+
+# bottom = 10
+
+# left   = 8
+
+# right  = 8
+
+# gap    = 10
+
+#
+
+# AeroSpace uses inner gaps for gaps between windows and outer
+
+# gaps for gaps between windows and the monitor edge.
+
+gaps.inner.horizontal = 10
+gaps.inner.vertical = 10
+
+gaps.outer.left = 8
+gaps.outer.bottom = 10
+gaps.outer.top = 8
+gaps.outer.right = 8
+
+# ============================================================
+
+# MAIN BINDING MODE
+
+# ============================================================
+
+[mode.main.binding]
+
+# ------------------------------------------------------------
+
+# FOCUS WINDOWS
+
+#
+
+# Old Yabai:
+
+#
+
+# ctrl + alt - a : focus west
+
+# ctrl + alt - d : focus east
+
+# ctrl + alt - s : focus south
+
+# ctrl + alt - w : focus north
+
+# ------------------------------------------------------------
+
+ctrl-alt-a = 'focus left'
+ctrl-alt-d = 'focus right'
+ctrl-alt-s = 'focus down'
+ctrl-alt-w = 'focus up'
+
+# ------------------------------------------------------------
+
+# MOVE WINDOWS
+
+#
+
+# Old Yabai:
+
+#
+
+# ctrl + shift - a : warp west
+
+# ctrl + shift - d : warp east
+
+# ctrl + shift - s : warp south
+
+# ctrl + shift - w : warp north
+
+# ------------------------------------------------------------
+
+ctrl-shift-a = 'move left'
+ctrl-shift-d = 'move right'
+ctrl-shift-s = 'move down'
+ctrl-shift-w = 'move up'
+
+# ------------------------------------------------------------
+
+# RESIZE WINDOWS
+
+#
+
+# Old Yabai used +/-100px style resizing.
+
+#
+
+# AeroSpace's smart resize chooses the appropriate dimension
+
+# based on the current container orientation.
+
+# ------------------------------------------------------------
+
+ctrl-a = 'resize smart -100'
+ctrl-d = 'resize smart +100'
+ctrl-s = 'resize smart +100'
+ctrl-w = 'resize smart -100'
+
+# ------------------------------------------------------------
+
+# WORKSPACE NAVIGATION
+
+#
+
+# Same as old Yabai:
+
+#
+
+# ctrl + alt + 1-9
+
+# ctrl + alt + 0 = workspace 10
+
+# ------------------------------------------------------------
+
+ctrl-alt-1 = 'workspace 1'
+ctrl-alt-2 = 'workspace 2'
+ctrl-alt-3 = 'workspace 3'
+ctrl-alt-4 = 'workspace 4'
+ctrl-alt-5 = 'workspace 5'
+ctrl-alt-6 = 'workspace 6'
+ctrl-alt-7 = 'workspace 7'
+ctrl-alt-8 = 'workspace 8'
+ctrl-alt-9 = 'workspace 9'
+ctrl-alt-0 = 'workspace 10'
+
+# ------------------------------------------------------------
+
+# MOVE WINDOW TO WORKSPACE
+
+#
+
+# Ctrl + Alt + Shift + number
+
+#
+
+# Unlike the workspace bindings above, these do NOT follow the
+
+# window. This matches the "follow = false" behavior from the
+
+# Hyprland config.
+
+# ------------------------------------------------------------
+
+ctrl-alt-shift-1 = 'move-node-to-workspace 1'
+ctrl-alt-shift-2 = 'move-node-to-workspace 2'
+ctrl-alt-shift-3 = 'move-node-to-workspace 3'
+ctrl-alt-shift-4 = 'move-node-to-workspace 4'
+ctrl-alt-shift-5 = 'move-node-to-workspace 5'
+ctrl-alt-shift-6 = 'move-node-to-workspace 6'
+ctrl-alt-shift-7 = 'move-node-to-workspace 7'
+ctrl-alt-shift-8 = 'move-node-to-workspace 8'
+ctrl-alt-shift-9 = 'move-node-to-workspace 9'
+ctrl-alt-shift-0 = 'move-node-to-workspace 10'
+
+# ------------------------------------------------------------
+
+# MOVE WINDOW TO WORKSPACE AND FOLLOW
+
+#
+
+# These are additional bindings.
+
+#
+
+# Ctrl + Alt + Shift + Cmd + number
+
+#
+
+# If these prove annoying, remove them. The normal move-to-
+
+# workspace bindings above are the important ones.
+
+# ------------------------------------------------------------
+
+ctrl-alt-shift-cmd-1 = 'move-node-to-workspace 1 --focus-follows-window'
+ctrl-alt-shift-cmd-2 = 'move-node-to-workspace 2 --focus-follows-window'
+ctrl-alt-shift-cmd-3 = 'move-node-to-workspace 3 --focus-follows-window'
+ctrl-alt-shift-cmd-4 = 'move-node-to-workspace 4 --focus-follows-window'
+ctrl-alt-shift-cmd-5 = 'move-node-to-workspace 5 --focus-follows-window'
+ctrl-alt-shift-cmd-6 = 'move-node-to-workspace 6 --focus-follows-window'
+ctrl-alt-shift-cmd-7 = 'move-node-to-workspace 7 --focus-follows-window'
+ctrl-alt-shift-cmd-8 = 'move-node-to-workspace 8 --focus-follows-window'
+ctrl-alt-shift-cmd-9 = 'move-node-to-workspace 9 --focus-follows-window'
+ctrl-alt-shift-cmd-0 = 'move-node-to-workspace 10 --focus-follows-window'
+
+# ------------------------------------------------------------
+
+# WORKSPACE BACK AND FORTH
+
+# ------------------------------------------------------------
+
+ctrl-alt-tab = 'workspace-back-and-forth'
+
+# ------------------------------------------------------------
+
+# PREVIOUS / NEXT WORKSPACE
+
+# ------------------------------------------------------------
+
+ctrl-alt-left = 'workspace prev --wrap-around'
+ctrl-alt-right = 'workspace next --wrap-around'
+
+# ============================================================
+
+# WINDOW STATE
+
+# ============================================================
+
+# ------------------------------------------------------------
+
+# CLOSE WINDOW
+
+# ------------------------------------------------------------
+
+ctrl-q = 'close'
+
+# ------------------------------------------------------------
+
+# FLOAT / TILE
+
+#
+
+# Old:
+
+# ctrl + space : yabai -m window --toggle float
+
+# ------------------------------------------------------------
+
+ctrl-space = 'layout floating tiling'
+
+# ------------------------------------------------------------
+
+# FULLSCREEN
+
+#
+
+# Old:
+
+# ctrl + f : yabai -m window --toggle zoom-fullscreen
+
+#
+
+# AeroSpace fullscreen is its own non-native fullscreen mode.
+
+# ------------------------------------------------------------
+
+ctrl-f = 'fullscreen'
+
+# Native macOS fullscreen as an alternative.
+
+ctrl-shift-f = 'macos-native-fullscreen'
+
+# ------------------------------------------------------------
+
+# BALANCE
+
+#
+
+# Old:
+
+# ctrl + k : yabai -m space --balance
+
+# ------------------------------------------------------------
+
+ctrl-k = 'balance-sizes'
+
+# ------------------------------------------------------------
+
+# LAYOUT ORIENTATION
+
+#
+
+# Old:
+
+# ctrl + l : yabai -m space --rotate 90
+
+#
+
+# AeroSpace doesn't have Yabai's exact "rotate 90" operation.
+
+# This toggles the tiling orientation.
+
+# ------------------------------------------------------------
+
+ctrl-l = 'layout horizontal vertical'
+
+# ------------------------------------------------------------
+
+# RESET / FLATTEN CURRENT WORKSPACE
+
+#
+
+# Useful when the tree gets weird.
+
+# ------------------------------------------------------------
+
+ctrl-r = 'flatten-workspace-tree'
+
+# ============================================================
+
+# APPLICATIONS
+
+# ============================================================
+
+# ------------------------------------------------------------
+
+# KITTY
+
+#
+
+# Old skhd:
+
+#
+
+# cmd + return :
+
+# /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
+
+# ------------------------------------------------------------
+
+cmd-enter = '''exec-and-forget open -a "kitty"'''
+
+# ------------------------------------------------------------
+
+# FINDER
+
+# ------------------------------------------------------------
+
+cmd-t = '''exec-and-forget open -a "Finder"'''
+
+# ============================================================
+
+# VOLUME
+
+# ============================================================
+
+# AeroSpace has native volume commands.
+
+#ctrl-alt-equal = 'volume up'
+#ctrl-alt-minus = 'volume down'
+#ctrl-alt-0 = 'volume mute-toggle'
+
+# ============================================================
+
+# SERVICE MODE
+
+#
+
+# Less frequently used commands.
+
+#
+
+# Enter with:
+
+#
+
+# Ctrl + Alt + ;
+
+#
+
+# Exit with:
+
+#
+
+# Esc
+
+# ============================================================
+
+ctrl-alt-semicolon = 'mode service'
+
+[mode.service.binding]
+
+# Exit service mode.
+
+esc = ['mode main']
+
+# Reload configuration.
+
+r = ['reload-config', 'mode main']
+
+# Balance workspace.
+
+b = ['balance-sizes', 'mode main']
+
+# Toggle floating / tiling.
+
+f = ['layout floating tiling', 'mode main']
+
+# Flatten workspace tree.
+
+#backspace = ['flatten-workspace-tree', 'mode main']
+
+# ------------------------------------------------------------
+
+# SWAP WINDOWS
+
+#
+
+# Similar to manually warping/rearranging windows.
+
+# ------------------------------------------------------------
+
+a = ['swap left', 'mode main']
+d = ['swap right', 'mode main']
+s = ['swap down', 'mode main']
+w = ['swap up', 'mode main']
+
+# ------------------------------------------------------------
+
+# MOVE WORKSPACE TO ANOTHER MONITOR
+
+# ------------------------------------------------------------
+
+left = ['move-workspace-to-monitor left --wrap-around', 'mode main']
+right = ['move-workspace-to-monitor right --wrap-around', 'mode main']
+
+# ------------------------------------------------------------
+
+# MOVE WINDOW TO ANOTHER MONITOR
+
+# ------------------------------------------------------------
+
+shift-left = [
+'move-node-to-monitor left --wrap-around --focus-follows-window',
+'mode main'
+]
+
+shift-right = [
+'move-node-to-monitor right --wrap-around --focus-follows-window',
+'mode main'
+]
+
