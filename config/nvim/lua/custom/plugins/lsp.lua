@@ -30,13 +30,21 @@ return {
             },
           },
         },
-        ruff_lsp = {},
+        ruff = {},
         --nixd = {},
         --lua_ls = {},
         --bashls = {},
         gopls = {
           cmd = { 'gopls' },
           filetypes = { 'go', 'gomod', 'gowork', 'gotmpl' },
+        },
+        rust_analyzer = {},
+        vtsls = {
+          cmd = {
+            vim.fn.expand('~') .. '/.local/share/mise/installs/npm-vtsls-language-server/latest/node_modules/.bin/vtsls',
+            '--stdio',
+          },
+          filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
         },
         --nimls = {
         --  cmd = { 'nimlangserver' },
@@ -53,30 +61,38 @@ return {
       },
     },
     config = function(_, opts)
-      local lspconfig = require 'lspconfig'
-      local mason_lspconfig = require 'mason-lspconfig'
+      local servers = opts.servers
 
-      lspconfig.gleam.setup {}
-
-      mason_lspconfig.setup {
-        ensure_installed = vim.tbl_keys(opts.servers),
-      }
-
-      mason_lspconfig.setup_handlers {
-        function(server_name)
-          local server_opts = opts.servers[server_name] or {}
-          -- Add some debugging
-          --print('Setting up ' .. server_name)
-          --print(vim.inspect(server_opts))
-
-          -- Add error handling
-          local setup_ok, setup_err = pcall(function()
-            lspconfig[server_name].setup(server_opts)
-          end)
-          if not setup_ok then
-            print('Error setting up ' .. server_name .. ': ' .. setup_err)
+      -- Apply per-server overrides (cmd/filetypes/settings/etc.) and enable
+      -- each configured server using the modern native LSP API.
+      for server_name, server_opts in pairs(servers) do
+        local ok, err = pcall(function()
+          if server_opts and not vim.tbl_isempty(server_opts) then
+            vim.lsp.config(server_name, server_opts)
           end
-        end,
+          vim.lsp.enable(server_name)
+        end)
+        if not ok then
+          vim.notify('Error enabling ' .. server_name .. ': ' .. err, vim.log.levels.ERROR)
+        end
+      end
+
+      -- Enable gleam (not in the opts.servers table above).
+      local gleam_ok, gleam_err = pcall(function()
+        vim.lsp.enable('gleam')
+      end)
+      if not gleam_ok then
+        vim.notify('Error enabling gleam: ' .. gleam_err, vim.log.levels.ERROR)
+      end
+
+      local configured = vim.tbl_keys(servers)
+      table.insert(configured, 'gleam')
+
+      require('mason-lspconfig').setup {
+        ensure_installed = vim.tbl_keys(servers),
+        -- Only auto-enable the servers we've explicitly configured above, so
+        -- mason never attaches servers we didn't ask for.
+        automatic_enable = configured,
       }
     end,
   },

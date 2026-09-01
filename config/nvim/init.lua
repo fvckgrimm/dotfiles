@@ -96,6 +96,29 @@ vim.g.have_nerd_font = false
 -- [[ Setting options ]]
 require("options")
 
+-- [[ Treesitter highlighting & indentation ]]
+-- nvim-treesitter no longer manages highlighting; it's enabled natively via
+-- vim.treesitter.start(). Register it at startup (not inside a lazy config) so
+-- it applies to every filetype regardless of when nvim-treesitter loads.
+vim.api.nvim_create_autocmd("FileType", {
+	callback = function()
+		pcall(vim.treesitter.start)
+	end,
+})
+
+-- Experimental treesitter-based indentation, falling back to vim's regex
+-- highlighting for Ruby (as before).
+vim.api.nvim_create_autocmd("FileType", {
+	callback = function()
+		if vim.bo.filetype == 'ruby' then
+			return
+		end
+		pcall(function()
+			vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+		end)
+	end,
+})
+
 -- [[ Basic Keymaps ]]
 require("keymaps")
 
@@ -105,6 +128,19 @@ require("lazy-bootstrap")
 -- [[ Configure and install plugins ]]
 require("lazy-plugins")
 
+-- Expose nvim-treesitter's bundled highlight queries on the runtimepath.
+-- lazy.nvim only adds a plugin's root to rtp (never its `runtime/` dir), so
+-- this version's queries at runtime/queries/* are otherwise never found when
+-- the install dir (~/.local/share/nvim/site) is empty — e.g. when the
+-- `tree-sitter` CLI isn't available to run :TSInstall/:TSUpdate.
+local ok_rt, runtime_path = pcall(function()
+	return require("nvim-treesitter.install").get_package_path("runtime")
+end)
+local ts_runtime = ok_rt and runtime_path or (vim.fn.stdpath("data") .. "/lazy/nvim-treesitter/runtime")
+if vim.fn.isdirectory(ts_runtime) == 1 then
+	vim.opt.rtp:append(ts_runtime)
+end
+
 vim.cmd.colorscheme("catppuccin")
 
 vim.filetype.add({
@@ -112,15 +148,6 @@ vim.filetype.add({
 		[".*.typ"] = "typst",
 	},
 })
-
-require("lazy").setup({
-	{
-		"supermaven-inc/supermaven-nvim",
-		config = function()
-			require("supermaven-nvim").setup({})
-		end,
-	},
-}, {})
 
 --require('sg').setup {
 -- Pass your own custom attach function
