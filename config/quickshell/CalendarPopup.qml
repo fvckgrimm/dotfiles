@@ -26,7 +26,7 @@ PopupWindow {
         root.todayYear = now.getFullYear();
     }
 
-    onVisibleChanged: { if (visible) updateToday() }
+    onVisibleChanged: { if (visible) { updateToday(); displayMonth = todayMonth; displayYear = todayYear } }
 
     Timer { interval: 60000; running: true; repeat: true; onTriggered: root.updateToday() }
 

@@ -45,19 +45,21 @@ PopupWindow {
 
     onVisibleChanged: {
         if (visible) {
+            updateToday()
             if (tab === "notifs") NotificationService.markAllRead()
+            if (tab === "calendar") { displayMonth = todayMonth; displayYear = todayYear }
             notifSubTab = "list"
             volPoll.running = true
             brightPoll.running = true
             identityPoll.running = true
             uptimePoll.running = true
             weatherPoll.running = true
-            updateToday()
         }
     }
 
     onTabChanged: {
         if (visible && tab === "notifs") NotificationService.markAllRead()
+        if (tab === "calendar") { updateToday(); displayMonth = todayMonth; displayYear = todayYear }
     }
 
     // ── Calendar state ──────────────────────────────────────────────────
