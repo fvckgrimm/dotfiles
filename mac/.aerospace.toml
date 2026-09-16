@@ -49,6 +49,18 @@ gaps.outer.top = 8
 gaps.outer.right = 8
 
 [mode.main.binding]
+# External keyboard (Print Screen, remapped via Karabiner to F13)
+f13 = '''exec-and-forget screencapture -c'''
+ctrl-f13 = '''exec-and-forget screencapture -c -i'''
+alt-f13 = '''exec-and-forget screencapture -c -w'''
+
+# MacBook keyboard (no Print Screen key, so use letter-based binds)
+ctrl-alt-shift-c = '''exec-and-forget screencapture -c'''
+ctrl-alt-shift-x = '''exec-and-forget screencapture -c -i'''
+ctrl-alt-shift-w = '''exec-and-forget screencapture -c -w'''
+
+ctrl-alt-shift-e = '''exec-and-forget screencapture ~/Pictures/Screenshots/screenshot-$(date +%Y%m%d%H%M%S).png'''       # full screen -> file
+ctrl-alt-shift-r = '''exec-and-forget screencapture -i ~/Pictures/Screenshots/screenshot-$(date +%Y%m%d%H%M%S).png'''    # selection -> file
 
 # Focus window (skhd: ctrl+alt-wasd / hypr: super+wasd)
 ctrl-alt-a = 'focus left'
